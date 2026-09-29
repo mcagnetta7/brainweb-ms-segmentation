@@ -1,0 +1,63 @@
+# ============================================================
+# BrainWeb datasets
+# ============================================================
+
+# Original downloaded data must never be committed
+data/raw/*
+
+# Generated or converted dataset files
+data/processed/*
+
+# Allow future placeholder files if needed
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+
+# ============================================================
+# Generated results
+# ============================================================
+
+results/figures/*
+results/metrics/*
+
+# Allow future placeholder files if needed
+!results/figures/.gitkeep
+!results/metrics/.gitkeep
+
+
+# ============================================================
+# MATLAB temporary files
+# ============================================================
+
+*.asv
+*.m~
+*.autosave
+
+# MATLAB generated/build folders
+slprj/
+codegen/
+
+# Compiled MEX files
+*.mex*
+
+
+# ============================================================
+# Operating system files
+# ============================================================
+
+.DS_Store
+Thumbs.db
+
+
+# ============================================================
+# Local VS Code configuration
+# ============================================================
+
+.vscode/
+
+
+# ============================================================
+# Claude Code local configuration
+# ============================================================
+
+.claude/
