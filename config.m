@@ -96,15 +96,56 @@ function cfg = config()
 
     %% Configurazione del dataset
     %
-    % Questi valori restano volutamente non definiti finché il dataset
-    % BrainWeb effettivo non è stato ispezionato.
+    % Valori decisi e verificati nelle fasi 18-28
+    % (vedi docs/BRAINWEB_DATASET_NOTES.md, sezione 13).
 
-    cfg.dataset.case = "";
-    cfg.dataset.modality = "";
-    cfg.dataset.lesionConfiguration = "";
-    cfg.dataset.noiseLevel = "";
-    cfg.dataset.rfInhomogeneity = "";
-    cfg.dataset.groundTruthType = "";
+    cfg.dataset.case = "msles2";
+    cfg.dataset.modality = "";              % baseline non ancora scelta
+    cfg.dataset.lesionConfiguration = "moderate";
+    cfg.dataset.noiseLevel = "pn0";
+    cfg.dataset.rfInhomogeneity = "rf0";
+    cfg.dataset.groundTruthType = "crisp";
+
+
+    %% File BrainWeb
+    %
+    % File originali, immutabili, scaricati nella fase 22.
+
+    cfg.dataset.rawDir = fullfile( ...
+        cfg.paths.rawData, ...
+        'msles2');
+
+    cfg.dataset.mriFiles.T1 = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 't1_ai_msles2_1mm_pn0_rf0.raws');
+
+    cfg.dataset.mriFiles.T2 = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 't2_ai_msles2_1mm_pn0_rf0.raws');
+
+    cfg.dataset.mriFiles.PD = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 'pd_ai_msles2_1mm_pn0_rf0.raws');
+
+    cfg.dataset.groundTruthFile = fullfile( ...
+        cfg.dataset.rawDir, 'ground_truth', 'phantom_1.0mm_msles2_crisp.rawb');
+
+
+    %% Formato e geometria dei file raw
+    %
+    % Verificati sui file scaricati (fasi 24-27). Il volume ricostruito
+    % segue la convenzione V(i,j,k) con i = X, j = Y, k = Z; nel file X
+    % varia più velocemente e Z più lentamente.
+
+    cfg.dataset.volumeSize = [181 217 181];     % [X Y Z]
+
+    % MRI "raw short (12 bit)": interi a 16 bit little-endian, valori
+    % 0...4095. La documentazione BrainWeb indica big-endian, ma i file
+    % scaricati sono little-endian (fase 24).
+    cfg.dataset.mriFormat.precision = "uint16";
+    cfg.dataset.mriFormat.byteOrder = "ieee-le";
+
+    % Ground truth "raw byte (unsigned)": un byte per voxel, etichette
+    % 0...10. L'ordine dei byte non ha effetto su dati a 8 bit.
+    cfg.dataset.groundTruthFormat.precision = "uint8";
+    cfg.dataset.groundTruthFormat.byteOrder = "ieee-le";
 
 
     %% Parametri degli algoritmi
