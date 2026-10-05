@@ -23,6 +23,7 @@ checks = {};    % {descrizione, esito}
 
 %% Caricamento con il loader reale
 
+volumes = struct();                 % evita conflitti con variabili già nel workspace
 volumes.T1 = loadBrainwebMri(cfg, "T1");
 volumes.T2 = loadBrainwebMri(cfg, "T2");
 volumes.PD = loadBrainwebMri(cfg, "PD");

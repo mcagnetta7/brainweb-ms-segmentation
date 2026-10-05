@@ -100,7 +100,7 @@ function cfg = config()
     % (vedi docs/BRAINWEB_DATASET_NOTES.md, sezione 13).
 
     cfg.dataset.case = "msles2";
-    cfg.dataset.modality = "";              % baseline non ancora scelta
+    cfg.dataset.modality = "T2";            % modalità iniziale, provvisoria (fase 41)
     cfg.dataset.lesionConfiguration = "moderate";
     cfg.dataset.noiseLevel = "pn0";
     cfg.dataset.rfInhomogeneity = "rf0";
@@ -124,6 +124,11 @@ function cfg = config()
     cfg.dataset.mriFiles.PD = fullfile( ...
         cfg.dataset.rawDir, 'mri', 'pd_ai_msles2_1mm_pn0_rf0.raws');
 
+    % File MRI di sviluppo con rumore (protocollo della fase 36). Solo i
+    % file effettivamente scaricati; nessuna configurazione di test.
+    cfg.dataset.noisyMriFiles.pn3.T2 = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 't2_ai_msles2_1mm_pn3_rf0.raws');
+
     cfg.dataset.groundTruthFile = fullfile( ...
         cfg.dataset.rawDir, 'ground_truth', 'phantom_1.0mm_msles2_crisp.rawb');
 
@@ -146,6 +151,27 @@ function cfg = config()
     % 0...10. L'ordine dei byte non ha effetto su dati a 8 bit.
     cfg.dataset.groundTruthFormat.precision = "uint8";
     cfg.dataset.groundTruthFormat.byteOrder = "ieee-le";
+
+
+    %% Rappresentazione numerica di lavoro (fase 43)
+    %
+    % I volumi MRI vengono caricati come uint16 (valori grezzi 0...4095) e
+    % convertiti in questo tipo per l'elaborazione, con un cast che
+    % conserva i valori: nessuna normalizzazione, nessun riscalamento.
+
+    cfg.preprocessing.workingClass = "double";
+
+
+    %% Normalizzazione delle intensità (fase 44)
+    %
+    % Riscalamento lineare fisso dal dominio a 12 bit di BrainWeb a [0,1]:
+    %   I_norm = (I - 0) / (4095 - 0)
+    % I limiti non dipendono dall'immagine. Serve perché le funzioni MATLAB
+    % per immagini assumono valori double in [0,1].
+
+    cfg.preprocessing.normalization.method = "fixed-12bit";
+    cfg.preprocessing.normalization.inputRange = [0 4095];
+    cfg.preprocessing.normalization.outputRange = [0 1];
 
 
     %% Parametri degli algoritmi
