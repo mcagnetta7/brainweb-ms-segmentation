@@ -129,6 +129,11 @@ function cfg = config()
     cfg.dataset.noisyMriFiles.pn3.T2 = fullfile( ...
         cfg.dataset.rawDir, 'mri', 't2_ai_msles2_1mm_pn3_rf0.raws');
 
+    % T1 pn3: solo per lo studio di fattibilità della maschera cerebrale
+    % su T1 (EXP-010). La modalità delle lesioni resta T2.
+    cfg.dataset.noisyMriFiles.pn3.T1 = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 't1_ai_msles2_1mm_pn3_rf0.raws');
+
     cfg.dataset.groundTruthFile = fullfile( ...
         cfg.dataset.rawDir, 'ground_truth', 'phantom_1.0mm_msles2_crisp.rawb');
 
@@ -172,6 +177,17 @@ function cfg = config()
     cfg.preprocessing.normalization.method = "fixed-12bit";
     cfg.preprocessing.normalization.inputRange = [0 4095];
     cfg.preprocessing.normalization.outputRange = [0 1];
+
+
+    %% Filtro di preprocessing (fase 47)
+    %
+    % Scelta corrente di sviluppo, non parametro finale: nessun filtro.
+    % La prima baseline di segmentazione è senza filtro (PROJECT_SPEC.md,
+    % sezioni 8 e 20). Il gaussiano sigma 0.5, 3x3, "replicate" (EXP-001,
+    % EXP-004) resta il candidato per il primo esperimento "baseline +
+    % preprocessing", da valutare con la regola della fase 37.
+
+    cfg.preprocessing.filter.method = "none";
 
 
     %% Parametri degli algoritmi
