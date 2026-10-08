@@ -1216,9 +1216,9 @@ Each figure shows the same counts on a linear and a logarithmic y axis.
 
 No GT, brain mask, threshold, preprocessing or modality choice was used or made.
 
-### 13.17 Phase 40: brain-only histogram — BLOCKED / DEFERRED
+### 13.17 Phase 40: brain-only histogram — BLOCKED / DEFERRED (resumed and completed in Section 13.31)
 
-**Status:** BLOCKED / DEFERRED (2026-10-04).
+**Status:** BLOCKED / DEFERRED (2026-10-04); **resumed after Phase 52 and completed on 2026-10-08 (Section 13.31).**
 
 **Reason:** the roadmap defines Phase 40 as "Dopo la brain mask, analizzare solo i tessuti cerebrali". Its prerequisite is a validated, MRI-derived brain mask. The roadmap builds and validates that mask only in Phases 48–52:
 
@@ -2994,3 +2994,97 @@ These statistics are descriptive only; the distribution is not interpreted here.
 - data: `data/processed/phase52_t2_pn0_brain_masked.mat`, `data/processed/phase52_t2_pn3_brain_masked.mat` (variables `maskedT2`, `brainMask`, `metadata`);
 - metrics: `results/metrics/phase52_t2_brain_mask_application.csv`;
 - figures: `results/figures/phase52_t2_pn0_brain_mask_application.png`, `results/figures/phase52_t2_pn3_brain_mask_application.png`.
+
+### 13.31 Phase 40 (resumed): brain-only histogram analysis
+
+Phase 40 was deferred on 2026-10-04 (Section 13.17) and resumed after Phase 52, as declared there.
+
+- **Mask:** the frozen, Phase-51-validated EXP-021 brain mask, used per condition (`pn0` mask for `pn0` volumes, `pn3` mask for `pn3`).
+- **Values:** `volume(brainMask)`, the raw `uint16` values inside the mask. The zero-padded `maskedT2` is **never** used (Section 13.30).
+- **Data:**
+  - `pn0`: T1, T2 and PD, the same configuration as Phases 38–39;
+  - `pn3`: T1 and T2. The PD `pn3` volume was never downloaded and is not needed.
+  - No GT, labels or held-out data.
+- **Binning:** as in Phase 39, one bin per raw value 0…4095 (edges −0.5:1:4095.5), identical for all modalities.
+- **Code:** `experiments/brain_only_histograms.m`; run on 2026-10-08. All 25 checks PASS: volume and mask sizes match; histogram total equals `nnz(mask)`; histogram-based mean equals the value mean; the global total equals all voxels; volumes are unchanged.
+
+| Condition / modality | Brain voxels | Min | Max | Mean | Median | Std | Mode | Zero voxels in mask | Global mean / median (Phases 38–39 reference) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `pn0` T1 | 1,688,787 | 371 | 2394 | 1897.62 | 1830 | 400.21 | 2373 | 0 | 877.43 / 636 |
+| `pn0` T2 | 1,688,787 | 1293 | 4030 | 2324.81 | 2327 | 462.32 | 1859 | 0 | 1370.07 / 1615 |
+| `pn0` PD | 1,688,787 | 1904 | 4036 | 3459.96 | 3554 | 235.57 | 3133 | 0 | 1876.61 / 3115 |
+| `pn3` T1 | 1,668,366 | 363 | 2484 | 1771.75 | 1731 | 372.80 | 1634 | 0 | 847.48 / 572 |
+| `pn3` T2 | 1,668,366 | 922 | 4064 | 2102.41 | 2067 | 426.34 | 2155 | 0 | 1287.74 / 1455 |
+
+Figures: `results/figures/phase40_{t1,t2,pd}_pn0_brain_only_histogram.png` and `phase40_{t1,t2}_pn3_brain_only_histogram.png`. Each shows the linear count, the log count (display only) and a shape comparison with the Phase 39 global histogram, each normalized to its own total.
+
+**Descriptive observations** (positions read approximately from the figures; **no tissue identity is assigned and no threshold is derived**):
+
+- **Background removed:** the dominant low-end cluster of the global histograms (Phase 39: 0…100 raw values hold about 37–41 % of all voxels) is **completely absent**. No brain voxel is 0, and every mean and median rises strongly. The brain-only distribution is far less dominated by a single cluster.
+- **`pn0` T2:**
+  - a narrow dominant peak near 1859 (the mode), a second narrow peak near 2420, and a small peak near 3990, with a continuum between them and a step near 3430;
+  - a low shelf of very few voxels between about 1300 and 1850;
+  - these are the same narrow peaks seen in the global T2 histogram (Section 13.16), so those global peaks are produced by voxels inside the brain support;
+  - 137,080 voxels (8.1 %) lie at raw ≥ 3000 (a descriptive count, not a threshold).
+- **`pn0` T1:**
+  - narrow peaks near 690, 1740 and 2373 (the mode); the global peak near 1560 is absent inside the mask;
+  - the high tail above about 2390 of the global T1 histogram is absent, so the brightest T1 voxels are outside the brain support;
+  - **circularity (declared before the run):** there is a sharp **step at raw value 1060**, the EXP-010 Otsu threshold (66/255 × 4095 ≈ 1060). The count jumps from 102 at 1059 to 225 at 1060. Only 64,917 voxels (3.8 %) lie below it, and they come from the slice-wise filling of enclosed holes (for example the ventricles). The T1 brain-only histogram is therefore **shaped by the mask construction** and is not an independent description of T1 tissue.
+- **`pn0` PD:** narrow peaks near 3133 (the mode), 3650 and 3870, and a sparse tail above 3870. A handful of isolated values lie between 1900 and 3100.
+- **`pn3` T2:**
+  - noise turns the narrow `pn0` peaks into **broad, overlapping modes** near 1730 and 2190 (the mode is 2155), with a deep valley between them, plus a small broad hump near 3560;
+  - the range widens to 922–4064;
+  - the positions are lower than in `pn0`, in line with the whole-volume relation pn3 ≈ 0.869·pn0 + 0.024 (for example 0.869·1859 + 98 ≈ 1713, 0.869·2420 + 98 ≈ 2201, 0.869·3990 + 98 ≈ 3565; open question 17, still unresolved).
+  - 79,129 voxels (4.7 %) lie at raw ≥ 3000.
+- **`pn3` T1:** mode 1634, range 363–2484 (statistics only).
+
+**Interpretation limits:**
+
+- The mask is a brain-**tissue** support: surface-open CSF is excluded, but the ventricles are included (Section 13.30). The brain-only distributions therefore mix brain tissue with ventricular CSF.
+- The T1 histogram is truncated by construction at the Otsu threshold, and T2/PD are indirectly selected by the T1-based mask.
+- Assigning peaks to tissues, or deriving lesion thresholds, is out of scope here. It belongs to the segmentation phases, under the Phase-37 development protocol.
+
+**Decision: Phase 40 COMPLETE** (brain-only histogram analysis, descriptive). No GT, threshold, segmentation or modality change; T2 remains the provisional lesion modality.
+
+**Phase 40 outputs** (excluded from Git):
+
+- metrics: `results/metrics/phase40_brain_only_histogram_summary.csv`, `results/metrics/phase40_brain_only_histogram_counts.csv`;
+- figures: `results/figures/phase40_t1_pn0_brain_only_histogram.png`, `results/figures/phase40_t2_pn0_brain_only_histogram.png`, `results/figures/phase40_pd_pn0_brain_only_histogram.png`, `results/figures/phase40_t1_pn3_brain_only_histogram.png`, `results/figures/phase40_t2_pn3_brain_only_histogram.png`.
+
+### 13.32 Phase 53: baseline lesion-segmentation method (definition only)
+
+Phase 53 is a **method-definition** phase. No threshold value was chosen, no threshold experiment was run, and no lesion metric was computed. It is not EXP-022.
+
+- **Status of the inputs:**
+  - Phase 40 is complete (Section 13.31).
+  - T2 remains the provisional lesion modality (Phase 41). T1 only provides the brain mask.
+  - EXP-021 (Phases 50–52) is the operational spatial support.
+  - Baseline preprocessing is NONE (Phase 47).
+- **Baseline pipeline:**
+
+  ```text
+  raw T2 -> double -> /4095 -> no filter -> EXP-021 brainMask -> one global upper threshold T -> lesionCandidateMask
+  ```
+
+  `lesionCandidateMask = brainMask AND (T2_norm > T)`, with:
+  - a **strict `>`** comparator;
+  - **one T** for the whole 3D volume, in the normalized [0, 1] domain (raw equivalent exactly 4095·T);
+  - a logical 181 × 217 × 181 output, always false outside `brainMask`;
+  - no morphology, component filtering, region growing, multimodal fusion or manual correction.
+
+  The output is a **candidate** mask, not a final lesion mask.
+- **Deferred on purpose:** the value of T and its estimation method (Phases 54–57). Any later rule must follow the Phase-37 protocol (one shared rule for `pn0` and `pn3`).
+- **Ventricular-CSF ambiguity (known, not solved):** EXP-021 includes the ventricles, and ventricular CSF is very bright in T2 (Sections 13.30–13.31). High T2 intensity is **not** equated with lesion. The baseline is a high-intensity candidate detector and is expected to produce CSF false positives. No ventricle exclusion, CSF threshold, T1 suppression or label use was introduced.
+- **Implementation:** `src/segmentation/thresholdLesionCandidates.m` applies a **provided** threshold only. It validates the volume (real, finite, values in [0, 1], so for example a raw 0…4095 volume is rejected), the mask (logical, same size) and the threshold (finite real scalar in [0, 1]); it does not estimate T, load files or use GT.
+- **Software check:** `experiments/lesion_threshold_function_check.m` uses **synthetic arrays and an artificial threshold only** (no BrainWeb data, no real threshold). It verifies:
+  - the output has the same size as the input and is logical;
+  - the output equals `brainMask AND volume > T` and is never true outside the mask;
+  - voxels equal to T are false (strict `>`);
+  - T = 1 gives no candidates, T = 0 keeps only in-mask values above 0, and an empty mask gives an empty output;
+  - the inputs are unchanged;
+  - the negative tests raise the exact identifiers: size mismatch, non-logical mask, threshold < 0, > 1, NaN, Inf or non-scalar, a NaN in the volume, and a volume outside [0, 1] (raw-scale and negative values).
+
+  It was run in MATLAB R2026b on 2026-10-08, and all 21 checks of the first version pass. After a user review, the explicit [0, 1] volume-range check was added (the documentation stated the domain, but the function did not enforce it), together with two negative tests. Rerun on 2026-10-08: all 23 checks pass.
+- No GT, labels or held-out data were used, and no segmentation experiment was executed. `config.m` is unchanged (no threshold parameter added); `PROJECT_SPEC.md` gained Section 10.1.
+
+**Decision: Phase 53 COMPLETE.** The baseline lesion segmentation is a single global upper-intensity threshold on unfiltered normalized T2 inside the validated EXP-021 brain-support mask. The threshold value and the threshold-selection method remain intentionally unresolved. Ready for Phase 54 (manual global threshold, as an experiment), not started.

@@ -356,6 +356,29 @@ The first experiments should evaluate individual modalities independently.
 
 Only after these experiments may a multimodal strategy be introduced.
 
+### 10.1 Baseline lesion segmentation (defined in Phase 53)
+
+```text
+Raw T2 -> double -> /4095 (fixed) -> NO FILTER
+       -> EXP-021 brainMask (spatial support, Phase 52)
+       -> single global upper-intensity threshold T
+       -> lesionCandidateMask
+```
+
+$$
+\text{lesionCandidateMask}(x) = \text{brainMask}(x) \land \big(\text{T2}_{\text{norm}}(x) > T\big)
+$$
+
+- **Modality:** T2, the provisional lesion modality (Phase 41). T1 is used only for the brain mask.
+- **Representation:** normalized T2 (raw/4095), in the domain [0, 1]. A raw-value equivalent of T is exactly 4095·T. `pn0` and `pn3` are not normalized separately and not histogram-matched.
+- **Comparator:** strict `>`. A voxel equal to T is not a candidate.
+- **One threshold** for the whole 3D volume: no per-slice, z-dependent, local, adaptive or position-dependent threshold.
+- **Output:** a logical 181 × 217 × 181 `lesionCandidateMask`, always false outside `brainMask`. It is a **candidate** mask, not the final lesion mask.
+- **Not part of the baseline:** no filtering, no morphology, no connected-component filtering, no region growing, no multimodal fusion, and no manual correction.
+- **T is intentionally unresolved at Phase 53.** Both its value and its estimation method are left to Phases 54–57 (manual global, iterative, Otsu, comparison). Any threshold rule must follow the Phase-37 protocol (one shared rule for `pn0` and `pn3`, never silently condition-specific).
+- **Known confound:** bright ventricular CSF lies inside `brainMask` (Section 9), so high T2 intensity is **not** equated with lesion. The baseline detects high-intensity candidates and is expected to include CSF false positives. These are not removed at the baseline stage.
+- Implementation: `src/segmentation/thresholdLesionCandidates.m` applies a **provided** T only (no estimation, no file access, no GT).
+
 ---
 
 ## 11. Thresholding
