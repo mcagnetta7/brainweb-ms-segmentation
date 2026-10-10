@@ -3229,7 +3229,7 @@ Histories: `results/metrics/exp023_iterative_threshold_history_{pn0,pn3}.csv`.
 |---|---:|---:|
 | T_otsu (normalized / raw-equivalent) | 0.662745 (169/255) / 2713.94 | 0.588235 (150/255) / 2408.82 |
 | Brain-mask voxels | 1,688,787 | 1,668,366 |
-| Candidate voxels | 223,202 | 257,444 |
+| Candidate voxels | 223,204 | 257,445 |
 | Fraction of brain / of whole volume | 13.22 % / 3.14 % | 15.43 % / 3.62 % |
 | Slices with candidates; first / last | 158; 2 / 160 | 155; 1 / 156 |
 | Candidate raw T2 min / max / mean / median | 2714 / 4030 / 3243.8 / 3130 | 2409 / 4064 / 2858.8 / 2721 |
@@ -3289,8 +3289,8 @@ T_otsu pn3 − pn0 = −305.12 raw-equivalent.
 | EXP-022 manual (3400) | `pn3` | 42,046 | 342 | 0.015014 |
 | EXP-023 iterative (2323.13 / 2421.88) | `pn0` | 848,576 | 3,512 | 0.008243 |
 | EXP-023 iterative | `pn3` | 247,703 | 3,493 | 0.027809 |
-| EXP-024 Otsu (2713.94 / 2408.82) | `pn0` | 223,202 | 3,505 | 0.030920 |
-| EXP-024 Otsu | `pn3` | 257,444 | 3,494 | 0.026778 |
+| EXP-024 Otsu (2713.94 / 2408.82) | `pn0` | 223,204 | 3,505 | 0.030920 |
+| EXP-024 Otsu | `pn3` | 257,445 | 3,494 | 0.026778 |
 
 | Rank | Method | Dice `pn0` | Dice `pn3` | Weaker condition | **DevelopmentScore** |
 |---:|---|---:|---:|---:|---:|
@@ -3318,3 +3318,358 @@ T_otsu pn3 − pn0 = −305.12 raw-equivalent.
 - **Not changed:** no threshold, method, mask or preprocessing was changed after seeing the Dice values. EXP-022/023/024 remain frozen, and no CSF removal or post-processing was added.
 
 These are **development** results (`pn0`, `pn3`), not test or generalization performance; no held-out data was used. **Phase 57 COMPLETE.** The Phase-40 multi-population histograms and these results (the main limitation is bright non-lesion fluid in the same high-intensity range) justify the next roadmap step, Phase 58 (multi-threshold evaluation), not started.
+
+### 13.37 Phase 58: multi-threshold T2 segmentation with multithresh (EXP-026)
+
+- **Why multi-threshold now:** ALLOWED_TECHNIQUES §5.4 allows `multithresh`/`imquantize` only when binary global thresholding is shown to be insufficient. Both conditions hold: the Phase-40 brain-only T2 histograms show more than two relevant populations, and in Phase 57 every binary global threshold gave Dice < 0.04.
+- **Single controlled change versus EXP-024:** `graythresh` → `multithresh(brainValues, 2)`, with `brainValues = T2norm(brainMask)` (EXP-021 mask, no artificial zeros). Everything else is unchanged: T2, /4095, preprocessing NONE, `pn0` + `pn3`, no morphology or component analysis.
+- **Pre-registered (log, before running):** N = 2 thresholds (3 classes), the minimal extension beyond binary thresholding. Candidate = **Class 3 only** (`brainMask & (imquantize(T2norm, levels) == 3)`), chosen a priori because high T2 intensity is the current cue. Same rule for both conditions; numerical thresholds may differ. Selection by the Phase-37 DevelopmentScore against EXP-024, no tolerance.
+- **Why it is still multi-threshold:** the final mask equals `T2norm > levels(2)` (verified voxel by voxel), but `levels(2)` comes from the joint three-class Otsu optimization, not from binary Otsu.
+- **Built-in behaviour:** `multithresh` returned `double` thresholds (no conversion needed). Unlike `graythresh`, its thresholds are not multiples of 1/255 (`pn0` upper × 255 = 184.115), so the two methods also differ in histogram discretization. This is not an adjustment.
+- **GT order:** GT was loaded only after both predictions were saved (checked by the script). It was used for Dice and for diagnostic per-class counts only.
+- **Code:** `experiments/multithresh_function_check.m` (synthetic, 10/10 ok) and `experiments/exp026_multithresh_t2.m` (62/62 checks PASS), run on 2026-10-10.
+
+| | `pn0` | `pn3` |
+|---|---:|---:|
+| Lower threshold T1 (normalized / raw-eq.) | 0.535922 / 2194.60 | 0.486930 / 1993.98 |
+| Upper threshold T2 (normalized / raw-eq.) | 0.722019 / 2956.67 | 0.658439 / 2696.31 |
+| EXP-024 Otsu threshold (raw-eq., reference) | 2713.94 | 2408.82 |
+| Class 1 voxels (fraction of brain mask) | 707,574 (0.4190) | 724,858 (0.4345) |
+| Class 2 voxels | 834,484 (0.4941) | 808,714 (0.4847) |
+| Class 3 voxels = candidates | 146,729 (0.0869) | 134,794 (0.0808) |
+| GT voxels in Class 1 / 2 / 3 | 0 / 477 / 3,035 | 0 / 560 / 2,952 |
+| GT voxels outside brain mask | 0 | 0 |
+| Intersection with GT | 3,035 | 2,952 |
+| Candidate / GT ratio | 41.78 | 38.38 |
+| **Dice** | **0.040402** | **0.042688** |
+
+| Method | Dice `pn0` | Dice `pn3` | Weaker condition | **DevelopmentScore** | Current selection |
+|---|---:|---:|---:|---:|---|
+| EXP-024 Otsu | 0.030920 | 0.026778 | 0.026778 | 0.028849 | no |
+| **EXP-026 multithresh (N = 2, Class 3)** | 0.040402 | 0.042688 | 0.040402 | **0.041545** | **yes** |
+
+(`results/metrics/exp026_multithresh_summary.csv`, `results/metrics/exp026_vs_otsu_comparison.csv`; EXP-024 values read from `exp025_thresholding_method_comparison.csv`.) Difference: +0.0126958.
+
+**Decision: KEEP EXP-026. It is the current selected thresholding method** by the pre-registered DevelopmentScore rule, applied without tolerance or override. EXP-024 remains a documented alternative. `config.m` records the method family only: `thresholdMethod = "multithresh"`, `numberOfThresholds = 2`, `candidateClass = 3`, with no threshold values. This is still a **development baseline**, not the final pipeline.
+
+**Interpretation** (figures `exp026_multithresh_histograms.png`, `exp026_t2_{pn0,pn3}_multiclass.png` at k = 46/91/136, and the post-scoring diagnostic `exp026_t2_gt_diagnostic_k102.png`):
+
+- **Histogram:** in `pn0` the lower boundary falls between the two main parenchymal peaks, and the upper one lies in the bright tail, 242.73 raw levels above binary Otsu. In `pn3` (broader, noisier peaks) the boundaries sit in the same relative positions, 287.48 levels above Otsu.
+- **Candidate volume decreased:** −34.3 % in `pn0` (146,729 vs 223,204) and −47.6 % in `pn3` (134,794 vs 257,445).
+- **GT retention decreased:** 3,035 vs 3,505 (`pn0`, 86.4 %) and 2,952 vs 3,494 (`pn3`, 84.1 %). No GT voxel falls in Class 1; the lost ones are in Class 2. At k = 102 they are mostly lesion borders and small or faint lesions.
+- **Bright fluid remains:** Class 3 still contains the whole lateral ventricles, the fourth ventricle and cisterns, sulcal and fissural CSF, and bright rims. The candidates are still about 40 times the GT volume.
+- **Overall:** mostly outcome C (much smaller Class 3 that keeps most GT voxels), with elements of A (the bright CSF-compatible structures are unchanged) and B (14–16 % of GT moves to Class 2). The three-class model mainly places the decision boundary higher than binary Otsu. The gain comes from removing part of the bright parenchymal tail, not from separating lesions from fluid. Intensity alone remains insufficient. `pn0`/`pn3` behave more consistently (Dice 0.0404 / 0.0427) than with EXP-024.
+- **Incidental:** no GT voxel lies outside the brain mask in either condition, so the `pn3` EXP-021 mask also contains all 3,512 GT voxels. This was observed after the freeze and changes nothing.
+- **Not done:** no other N, no Class 2+3, no threshold change, no morphology or component filtering, no harmonization, no held-out data.
+
+These are **development** results, not test performance. **Phase 58 COMPLETE.** Next roadmap step: Phase 59 (variable / local thresholding), not started.
+
+### 13.38 Phase 59: variable / local T2 thresholding (EXP-027)
+
+- **Why local thresholding now:** after Phase 58 every global rule still selects large bright non-lesion structures (EXP-026 candidates about 40 times the GT volume). The course offers a spatially variable threshold from neighbourhood statistics (ALLOWED_TECHNIQUES §5.5).
+- **From the course:** `T(x,y) = a·m(x,y) + b·s(x,y)` with the local mean m and local standard deviation s, and the candidate rule `I(x,y) > T(x,y)`. The neighbourhood is that of a pixel (x,y), so processing is **2D, axial slice by slice**; the 181 binary slices are stacked into the 3D prediction. No 3D window.
+- **Project choices (not from the course):**
+  - square window `windowSize × windowSize`, centred on the pixel;
+  - **masked statistics**: only pixels with `brainMask == true` inside the window contribute; at the image border the window is truncated (the zero padding also applies to the count, so no padding value enters the statistics);
+  - **population** standard deviation, `s = sqrt(N·S2 − S1²)/N` with negative roundoff clamped to 0;
+  - statistics computed on the **integer raw levels** (0…4095), then `T/4095`. The rule is linear in the intensity scale, so the method is unchanged, but the sums become exact. Without this, the many perfectly uniform `pn0` regions would get random ±roundoff in s and `I > m` would be decided by roundoff. The window sums use `conv2` with explicit vectors of ones, for the same reason (`imfilter` may factor the kernel by SVD with inexact coefficients);
+  - T is not clipped (max 1.14 in the normalized domain); comparator strict `>`; no combination with any global threshold.
+- **Pre-registered grid (log, before running):** a = 1; windowSize ∈ {9, 21, 41}; b ∈ {0.5, 1.0, 1.5}. That gives 9 configurations, the same for `pn0` and `pn3`. Selection by DevelopmentScore, then weaker-condition Dice; a remaining exact tie would have been reported as unresolved. No tolerance.
+- **Order:** all 18 predictions were saved before the GT was loaded (checked).
+- **Code:** `src/segmentation/localMeanStdThreshold2D.m`, `experiments/local_threshold_function_check.m` (synthetic, 19/19 ok), and `experiments/exp027_local_threshold_t2.m` (258/258 checks PASS, 216 of them per configuration, including invariance to outside-mask values). The first run stopped at the figure stage, after all numbers had been printed, because of a variable `image` left in the workspace by the synthetic check; the rerun gave identical numbers.
+
+| Rank | Configuration | Dice `pn0` | Dice `pn3` | Weaker | **DevelopmentScore** | Candidates `pn0` / `pn3` | GT captured `pn0` / `pn3` |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | **W21_B15** | 0.036055 | 0.036151 | 0.036055 | **0.036103** | 119,133 / 114,771 | 2,211 / 2,138 |
+| 2 | W41_B15 | 0.033595 | 0.035162 | 0.033595 | 0.034378 | 141,511 / 133,171 | 2,436 / 2,403 |
+| 3 | W41_B10 | 0.028358 | 0.027054 | 0.027054 | 0.027706 | 223,588 / 231,282 | 3,220 / 3,176 |
+| 4 | W21_B10 | 0.027118 | 0.025818 | 0.025818 | 0.026468 | 213,322 / 221,989 | 2,940 / 2,911 |
+| 5 | W09_B15 | 0.021164 | 0.019098 | 0.019098 | 0.020131 | 82,293 / 87,700 | 908 / 871 |
+| 6 | W09_B10 | 0.021987 | 0.018073 | 0.018073 | 0.020030 | 166,494 / 198,007 | 1,869 / 1,821 |
+| 7 | W41_B05 | 0.016849 | 0.016007 | 0.016007 | 0.016428 | 409,083 / 429,923 | 3,476 / 3,469 |
+| 8 | W21_B05 | 0.016774 | 0.015700 | 0.015700 | 0.016237 | 396,268 / 421,445 | 3,353 / 3,336 |
+| 9 | W09_B05 | 0.016518 | 0.014099 | 0.014099 | 0.015309 | 360,936 / 418,490 | 3,010 / 2,975 |
+
+(`results/metrics/exp027_local_threshold_grid.csv` with the threshold-map and neighbour-count statistics, `exp027_local_threshold_config_comparison.csv`, `exp027_vs_exp026_comparison.csv`, `results/figures/exp027_local_threshold_grid_scores.png`.)
+
+**Decision A: the best local configuration is W21_B15** (window 21, a = 1, b = 1.5), with no tie.
+**Decision B: REJECT EXP-027.** Its DevelopmentScore of 0.036103 is below the 0.041545 of EXP-026 (difference −0.0054419). **EXP-026 remains the current selected thresholding method.** `config.m` is unchanged, and the local parameters are not recorded as current.
+
+**Behaviour** (figures `exp027_best_local_{pn0,pn3}.png` at k = 46/91/136; post-scoring diagnostic `exp027_t2_gt_diagnostic_k102.png`):
+
+- **Candidate volume decreased relative to EXP-026:** −18.8 % in `pn0` (119,133 vs 146,729) and −14.9 % in `pn3` (114,771 vs 134,794). The candidates are still 33.9 / 32.7 times the GT volume.
+- **Substantial GT loss:** 2,211 vs 3,035 (`pn0`) and 2,138 vs 2,952 (`pn3`) lesion voxels captured, i.e. 63.0 % / 60.9 % of the GT against 86.4 % / 84.1 %.
+- **Bright CSF reduced:** the lateral and fourth ventricles are largely not selected, because the threshold map is highest there.
+- **Edge-like and thin structures increased:** sulcal and fissural CSF, the cortical ribbon and the borders of bright regions become candidates. 27,627 (`pn0`) and 32,777 (`pn3`) of the best-local candidates are not in EXP-026.
+- **Noise:** `pn3` adds scattered isolated voxels and speckle, including inside ventricle borders. The scores of the best configuration are nevertheless similar (0.0361 / 0.0362).
+- **Main failure mode:** the lesions are mostly **periventricular**. The bright ventricle inside the window raises m and s, so lesion voxels next to it fall below T; at k = 102 the parts of the large lesions adjacent to the ventricle are missed, while isolated round lesions are kept. The method answers "bright relative to the neighbourhood", which suppresses uniformly bright regions but also the lesions that touch them.
+- **Grid trend:** b dominates (b = 1.5 is best for every window), and windows 21/41 beat 9. The best value lies on the edge of the grid (b = 1.5). This is noted as a limitation but was **not** extended: the grid was pre-registered.
+- **Scope of the conclusion:** EXP-027 shows that **no configuration of the pre-registered family and range** (a = 1, window {9, 21, 41}, b {0.5, 1.0, 1.5}) beats EXP-026. It does not show that local thresholding cannot work in general. The score still rising at b = 1.5 suggests that larger b might behave differently, but that remains untested; extending the grid after seeing the results would be post-hoc tuning.
+- **Not done:** no parameter outside the grid, no separate `pn0`/`pn3` parameters, no hybrid local/global rule, no filtering, morphology, component analysis or harmonization, no held-out data.
+
+These are **development** results. **Phase 59 COMPLETE.** Next roadmap step: Phase 60 (generate the selected lesion candidate mask), not started.
+
+### 13.39 Phase 60: canonical lesion candidate mask (from EXP-026)
+
+- **Status of the thresholding block:** the method exploration of Phases 54–59 is complete for now. EXP-026 (`multithresh` N = 2, Class 3) is the selected method; EXP-027 (local thresholding) was rejected. Phase 60 is an **integration step, not an experiment**: no new experiment ID, no GT, no new metric.
+- **Method (unchanged EXP-026 rule):** for each volume, `levels = multithresh(T2norm(brainMask), 2)`, `classVolume = imquantize(T2norm, levels)`, `candidateMask = brainMask & (classVolume == 3)`, which is equivalent to `T2norm > levels(2)` (checked). The thresholds are re-estimated from the data; no numerical threshold is stored anywhere.
+- **Code:**
+  - `src/segmentation/generateLesionCandidateMask.m` is the reusable generator. It reads the method parameters from `cfg.segmentation` (`thresholdMethod = "multithresh"`, `numberOfThresholds = 2`, `candidateClass = 3`) and refuses any class other than the highest one. It loads no files and uses no GT, metrics, morphology or components.
+  - `experiments/candidate_mask_function_check.m` is the synthetic software check.
+  - `experiments/phase60_generate_candidate_mask.m` is the orchestration script, run on 2026-10-10 with 55/55 checks PASS. It does not call the GT loader.
+- **Canonical outputs:** `data/processed/phase60_t2_{pn0,pn3}_candidate_mask.mat`, with the variable `candidateMask` and metadata (source EXP-026, thresholds, `gtUsedForGeneration = false`, `finalSegmentation = false`). The EXP-026 files are left untouched.
+
+| | `pn0` | `pn3` |
+|---|---:|---:|
+| Lower threshold (normalized / raw-eq.) | 0.535922 / 2194.60 | 0.486930 / 1993.98 |
+| Upper threshold (normalized / raw-eq.) | 0.722019 / 2956.67 | 0.658439 / 2696.31 |
+| Brain-mask voxels | 1,688,787 | 1,668,366 |
+| Candidate voxels (fraction of brain mask) | 146,729 (0.0869) | 134,794 (0.0808) |
+| First / last non-empty axial slice | 11 / 154 | 2 / 155 |
+| Identical to frozen EXP-026 mask and thresholds | yes | yes |
+
+(`results/metrics/phase60_candidate_mask_summary.csv`; no new figures, because the EXP-026 overlays `exp026_t2_{pn0,pn3}_multiclass.png` show the same masks.)
+
+- **Not the final segmentation:** `candidateMask` is an intermediate lesion-candidate volume. The known over-segmentation (bright CSF-compatible structures, about 40 times the GT volume per EXP-026) is **intentionally left untouched** here.
+
+**Phase 60 COMPLETE.** Next roadmap step: Phase 61 (candidate-mask error analysis), not started.
+
+### 13.40 Phase 61: candidate-mask error analysis (EXP-028, diagnostic)
+
+- **Source:** the canonical Phase-60 masks `data/processed/phase60_t2_{pn0,pn3}_candidate_mask.mat` (`candidateMask`, = EXP-026). They were loaded, not regenerated, and verified unchanged at the end.
+- **GT role:** label 10, loaded after the masks and used **only for diagnosis**. TP/FP/FN masks exist only in memory and nothing is saved under `data/processed/`. No ROI, slice range, coordinate or location prior is derived from the error locations.
+- **Topology tool:** the number of candidate pixels in the 2D 8-neighbourhood, per axial slice (`conv2`, 3×3 kernel with a zero centre, zero padding). It matches an independent 8-shift implementation (no wrap-around between slices, no artificial border neighbours). This is **not** component analysis (that comes in Phase 67): no labels, no objects, no areas.
+- **Code:** `experiments/exp028_candidate_mask_error_analysis.m`, 51/51 checks PASS. No morphology, components, thresholding or `save`.
+
+| | `pn0` | `pn3` |
+|---|---:|---:|
+| Candidates / GT | 146,729 / 3,512 | 134,794 / 3,512 |
+| TP / FP / FN | 3,035 / 143,694 / 477 | 2,952 / 131,842 / 560 |
+| Isolated candidates (TP / FP) | 7,465 (22 / 7,443) | 8,996 (35 / 8,961) |
+| FP with 0 / ≤ 2 / 8 candidate neighbours | 5.2 % / 25.2 % / 24.7 % | 6.8 % / 25.0 % / 26.0 % |
+| TP with 0 / ≤ 2 / ≥ 5 candidate neighbours | 0.7 % / 7.5 % / 64.9 % | 1.2 % / 8.6 % / 65.7 % |
+| FN by candidate neighbours 0…8 | 95 / 84 / 110 / 116 / 65 / 6 / 0 / 1 / 0 | 73 / 91 / 106 / 138 / 119 / 26 / 7 / 0 / 0 |
+| FN with all 8 neighbours (single-pixel hole-like) | 0 | 0 |
+
+(Full distributions: `results/metrics/exp028_neighbor_distribution.csv`; per-slice counts: `exp028_error_counts_by_slice.csv`; summary: `exp028_candidate_error_summary.csv`. Figures: `exp028_candidate_errors_{pn0,pn3}.png`, `exp028_error_contact_sheet_{pn0,pn3}.png`, `exp028_fp_fn_by_slice.png`, `exp028_neighbor_topology.png`.)
+
+**Error taxonomy:**
+
+- **A. Isolated / speckle-like candidates: present, minor.** Isolated voxels are 5.2 % (`pn0`) and 6.8 % (`pn3`) of the FP, and about 99.7 % of all isolated candidates are FP. However, 22 / 35 TP voxels are isolated too, so small real lesions exist at this scale.
+- **B. Thin / edge-like FP: substantial.** About 40 % of the FP have 1–4 candidate neighbours (`pn0` 40.0 %, `pn3` 37.7 %). Visually these are cortical/sulcal rim-like patterns, the interhemispheric fissure, and a thin line along the brain-mask border, present in almost every slice of the contact sheets.
+- **C. Large / dense FP: dominant.** About a quarter of the FP are fully surrounded by candidates (8 neighbours), and 55 % have ≥ 5. Visually these are broad compact regions compatible with ventricular CSF (the lateral ventricles in full), the fourth ventricle and cisterns, and sylvian/fissural fluid. The FP profile peaks around k ≈ 50–100 (diagnostic only).
+- **D. Hole / gap-like FN: no enclosed holes; boundary loss.** There is **no** single-pixel enclosed FN, and only 7 (`pn0`) / 33 (`pn3`) FN have 5–7 neighbours. About 80 % of the FN have 1–4 candidate neighbours, i.e. they lie on lesion borders next to detected signal. 13–20 % have none: small, faint lesions missed entirely, e.g. the frontal dots around k = 51–61. The 8-neighbour count detects only single-pixel enclosed gaps; no larger enclosed gap is visible in the fixed slices or contact sheets.
+- **E. Fragmentation: not clearly observed.** In the inspected slices each visible GT lesion appears as one contiguous TP patch with FN at its border. A definitive answer needs component analysis (Phase 67).
+- **F. Fusion / bridging: observed.** The periventricular lesion signal is contiguous with the bright candidate region compatible with ventricular CSF: at k = 91 and k = 102 the TP voxels (yellow) touch the ventricle-compatible FP region (red) directly. Thin rim-like candidates also link neighbouring sulcal structures.
+- **G. Systematic non-morphological confound: yes, and it is the main problem.** The dominant FP are bright, fluid-like structures in the same intensity class as the lesions. They are as large as, or larger than, the lesions and are often attached to them. Shape operators cannot separate them selectively.
+- **`pn0` vs `pn3`:** the topology is very similar. `pn3` has more isolated FP (8,961 vs 7,443), more FN (560 vs 477, more of them with 4–6 neighbours, i.e. ragged lesion borders under noise), and noisier FP edges. At k = 46 the fourth-ventricle-compatible region is selected fully in `pn0` but only along its rim in `pn3`.
+
+**Morphology families worth testing later** (none selected; no operation, structuring-element shape or size chosen; no morphology was run):
+
+- **Erosion / opening:** justified by the isolated and thin FP (A, B; about a quarter of the FP have ≤ 2 neighbours). Risks: the FN already sit on lesion borders, and small lesions include isolated TP, so erosion will cost lesion voxels.
+- **Dilation:** might recover border FN (D), since about 80 % of the FN touch detected signal, but at a large FP cost, because the dense FP regions would grow too.
+- **Closing:** weak support. There are no enclosed single-pixel holes, and closing would mainly merge thin FP structures further (it worsens F).
+- **Limit:** the dominant error (C + F + G, large fluid-like regions attached to periventricular lesions) is **unlikely to be solved by simple morphology alone**. Generic, automatic and experimentally validated rules (e.g. component-level analysis or other cues in later phases) would be needed. No rule is derived here.
+
+**Phase 61 COMPLETE.** EXP-026 remains the candidate-generation method and `candidateMask` is unchanged. Next: Phase 62 (erosion / dilation experiments), not started.
+
+### 13.41 Phase 62: erosion / dilation probe (EXP-029)
+
+- **Motivation (EXP-028):**
+  - **Erosion** tests whether removing one boundary layer suppresses the isolated and thin false positives (FP), and at what cost in lesion voxels.
+  - **Dilation** tests whether adding one layer recovers the lesion-border misses (FN), and at what cost in new FP and fusion.
+- **Setup (pre-registered in the log before running):**
+  - input: the unchanged Phase-60 `candidateMask` (= EXP-026);
+  - `strel('square', 3)`, applied once, 2D slice by slice (`src/segmentation/applySliceMorphology2D.m`), with the output intersected with EXP-021;
+  - three variants (baseline, erosion, dilation); the four outputs were saved before the GT was loaded; no tolerance, no pipeline decision.
+- **Why square 3×3:** it is the smallest centred square and equals the 2D 8-neighbourhood of Phase 61, so it measures the effect of about one pixel layer without a parameter sweep. It is a **fixed exploratory probe, not the Phase-65 structuring-element selection.**
+- **Code:** `experiments/morphology_basic_function_check.m` (synthetic, 13/13 ok) and `experiments/exp029_erosion_dilation_probe.m` (59/59 checks PASS). An independent reference confirms the result: erosion keeps exactly the candidates with 8 candidate neighbours, and dilation equals `(candidate | ≥ 1 neighbour) & brainMask`. The eroded counts match the prediction made from EXP-028 before the run.
+
+| Variant | Candidates `pn0` / `pn3` | TP `pn0` / `pn3` | Dice `pn0` | Dice `pn3` | **DevelopmentScore** | Δ vs baseline |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline | 146,729 / 134,794 | 3,035 / 2,952 | 0.040402 | 0.042688 | **0.041545** | 0 |
+| erosion | 36,193 / 34,918 | 698 / 671 | 0.035159 | 0.034921 | 0.035040 | −0.0065049 |
+| dilation | 344,844 / 326,242 | 3,417 / 3,439 | 0.019618 | 0.020858 | 0.020238 | −0.0213069 |
+
+| Change | `pn0` | `pn3` |
+|---|---:|---:|
+| Removed by erosion (TP / FP) | 110,536 (2,337 / 108,199) | 99,876 (2,281 / 97,595) |
+| FP share of removed; TP lost; FP removed | 97.9 %; 77.0 %; 75.3 % | 97.7 %; 77.3 %; 74.0 % |
+| Added by dilation (TP = recovered FN / FP) | 198,115 (382 / 197,733) | 191,448 (487 / 190,961) |
+| FN recovered; FP share of added | 80.1 % of 477; 99.8 % | 87.0 % of 560; 99.7 % |
+
+(`results/metrics/exp029_erosion_dilation_summary.csv`, `exp029_morphology_effect_comparison.csv`, `exp029_morphology_change_counts.csv`. Figures: `exp029_morphology_probe_{pn0,pn3}.png`, `exp029_morphology_errors_{pn0,pn3}.png`, `exp029_morphology_changes_{pn0,pn3}.png`; the title of the last one is clipped on the right, which is cosmetic only.)
+
+**Effects (both primitives WORSEN the baseline DevelopmentScore):**
+
+- **Erosion is not FP-selective.** 97.9 % of the removed voxels are FP, but only because FP dominate the mask: erosion removes 75 % of the FP **and 77 % of the lesion voxels**.
+  - The lesions are themselves thin at this scale: only 23 % of the lesion voxels are interior to a 3×3 square.
+  - Visually, the isolated voxels and the thin cortical/sulcal rims disappear completely (k = 136 is almost empty).
+  - The regions compatible with the ventricles shrink but persist.
+  - The lesions are reduced to their cores, and small lesions vanish (at k = 102 the lesion borders become FN).
+- **Dilation recovers most border FN, at a prohibitive cost.** It recovers 80–87 % of the FN (382 / 487 voxels) but adds about 190,000–198,000 FP, i.e. roughly 400–520 new FP per recovered lesion voxel. The candidate volume more than doubles.
+  - Visually, every structure gains a one-pixel ring, and the rims become broad bands.
+  - The ventricle-compatible regions grow, and neighbouring structures and periventricular lesions merge further, so fusion increases.
+- **Hypotheses:**
+  - **H1 supported**, more strongly than expected (the loss of lesion signal is about as large as the FP removal).
+  - **H2 supported.**
+  - **H3 supported:** the dense fluid-like regions survive erosion and grow under dilation.
+- **Conclusion:** neither primitive alone is useful as post-processing, and neither replaces the Phase-60 mask. **No morphology operation or structuring element is selected**; EXP-026 / Phase 60 remains the candidate baseline, and `config.m` is unchanged.
+- **Implications for Phase 63 (opening = erosion followed by dilation):**
+  - Opening can only restore structures that survive the erosion. With square 3×3 that is the 698 / 671 interior lesion voxels plus a ring, so lesions without a 3×3 interior would be lost.
+  - On the other hand, it would remove the isolated and thin FP, which erosion showed to be the fully removable part.
+  - It is not expected to touch the dense fluid-like regions.
+
+These are development results; no opening, closing, component analysis, hole filling or held-out data was used. **Phase 62 COMPLETE.** Next: Phase 63 (opening), not started.
+
+### 13.42 Phase 63: standard opening probe (EXP-030)
+
+- **Why opening, although erosion alone worsened the score:** opening = erosion followed by dilation with the same structuring element. The dilation can rebuild structures whose core survives the erosion, while structures with no surviving core (isolated voxels, thin rims, small lesions) stay removed.
+- **Setup (pre-registered in the log):**
+  - `imopen` with `strel('square', 3)`, the same provisional probe as EXP-029 (not the Phase-65 selection), applied once, 2D slice by slice;
+  - the result is intersected with EXP-021, which changed nothing (as expected);
+  - the input is the unchanged Phase-60 `candidateMask`; both outputs were saved before the GT was loaded.
+- **Stated before results:** `opened ⊆ baseline`, so opening **cannot recover any baseline FN**. Its only possible gain is removing FP while keeping TP.
+- **Code:** `experiments/opening_basic_function_check.m` (synthetic, 14/14 ok) and `experiments/exp030_opening_probe.m` (70/70 checks PASS). The checks include:
+  - `imopen` = erosion → dilation, and its erosion stage = the frozen EXP-029 erosion;
+  - eroded ⊆ opened ⊆ baseline, together with the TP/FP/FN orderings;
+  - baseline and erosion Dice reproduced exactly.
+
+| Variant | Candidates `pn0` / `pn3` | TP `pn0` / `pn3` | FN `pn0` / `pn3` | Dice `pn0` | Dice `pn3` | **DevelopmentScore** | Δ vs baseline |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| baseline | 146,729 / 134,794 | 3,035 / 2,952 | 477 / 560 | 0.040402 | 0.042688 | 0.041545 | 0 |
+| erosion (EXP-029 reference) | 36,193 / 34,918 | 698 / 671 | 2,814 / 2,841 | 0.035159 | 0.034921 | 0.035040 | −0.0065049 |
+| **opening** | 70,878 / 67,066 | 2,107 / 2,013 | 1,405 / 1,499 | 0.056647 | 0.057043 | **0.056845** | **+0.0153005** |
+
+| Change | `pn0` | `pn3` |
+|---|---:|---:|
+| Removed by opening (TP / FP) | 75,851 (928 / 74,923) | 67,728 (939 / 66,789) |
+| Baseline TP preserved; baseline FP removed | 69.4 %; 52.1 % | 68.2 %; 50.7 % |
+| Restored after erosion (TP / FP) | 34,685 (1,409 / 33,276) | 32,148 (1,342 / 30,806) |
+| Erosion-lost TP restored; erosion-lost FP restored | 60.3 %; 30.8 % | 58.8 %; 31.6 % |
+| Isolated candidates before → after | 7,465 → 0 | 8,996 → 0 |
+
+(`results/metrics/exp030_opening_summary.csv`, `exp030_opening_score_comparison.csv`, `exp030_opening_change_analysis.csv`. Figures: `exp030_opening_probe_{pn0,pn3}.png`, `exp030_opening_errors_{pn0,pn3}.png`, `exp030_opening_changes_{pn0,pn3}.png`.)
+
+**Result: OPENING IMPROVES THE BASELINE WITH THE PROVISIONAL SQUARE-3 PROBE** (+0.0153, DevelopmentScore 0.056845, the best so far). It also beats erosion alone (+0.0218), in both conditions, and the gain is consistent between `pn0` and `pn3`.
+
+- **Selective restoration:** the dilation stage restores about 60 % of the lesion voxels removed by the erosion but only about 31 % of the removed FP voxels. Lesion candidate regions whose core is large enough to survive the 3×3 erosion are partly rebuilt by the following dilation; small or thin lesion structures without such a core are removed permanently (hence the FN increase), and so are thin FP structures. Overall, opening removes about half of the FP at the cost of about 31 % of the TP.
+- **Isolated / thin FP (H1 supported):** isolated candidates drop to 0 (after opening every candidate has at least 3 of its 8 neighbours). The thin cortical, sulcal and fissural rims disappear almost completely: k = 136 is nearly empty apart from a few small blocks.
+- **Small / thin lesions (H2 supported):** only lesion regions with a core that survives the 3×3 erosion are (partly) rebuilt, while small lesions and thin lesion parts without such a core are lost (at k = 91 and 102 small lesions turn green). FN rise from 477 to 1,405 (`pn0`) and from 560 to 1,499 (`pn3`). This is the main cost and a clear small-lesion risk.
+- **Where the gain comes from:** opening does not find more lesions (it is anti-extensive). The Dice rises because it removes FP mass (isolated voxels, thin structures, cortical/sulcal rims, narrow connections) faster than it loses TP. It does not resolve the ventricular confound.
+- **Dense fluid-like FP (H3 supported):** the ventricle-compatible regions and the fourth-ventricle/cistern-compatible regions are reconstructed almost entirely; only thin peripheral parts are removed. 68,771 / 65,053 FP remain, about 20 times the GT volume.
+- **Lesion–fluid contact:** the contact at k = 102 is unchanged.
+- **H4:** opening beats erosion and, measurably, the baseline.
+- **Not final:** this is evidence for Phases 65–66, and it is limited to square 3×3. **No morphology operation or structuring element is selected.** The Phase-60 `candidateMask` (EXP-026) remains the canonical baseline, and `config.m` is unchanged. A negative or positive result with another structuring element is not implied.
+
+These are development results; no closing, reconstruction, component analysis, size rule or held-out data was used. **Phase 63 COMPLETE.** Next: Phase 64 (closing), not started.
+
+### 13.43 Phase 64: closing after opening (EXP-031)
+
+- **Why after the opening:** the morphology sequence of the roadmap (opening, then closing) and the Phase-63 result. EXP-030 is the best observed candidate, but it raised the FN from 477 / 560 to 1,405 / 1,499. Closing applied to the **EXP-030 opened mask** tests whether the gaps it opened or exposed can be refilled.
+- **Setup (pre-registered in the log):**
+  - `imclose` with `strel('square', 3)`, the same provisional probe as Phases 62–63, applied once, 2D slice by slice.
+  - The EXP-021 brain mask is applied **only after the complete closing**. Clipping the intermediate dilation would change the operation near the mask border; a synthetic case in `closing_basic_function_check.m` shows this. So the Phase-62 helper, which clips every step, was **not** used.
+  - Both outputs were saved before the GT was loaded.
+- **Stated before results:** closing is extensive (opened ⊆ closed, verified: no opened voxel removed), so it cannot remove any EXP-030 FP and can only add voxels.
+- **Code:** `experiments/closing_basic_function_check.m` (14/14 ok) and `experiments/exp031_closing_after_opening.m` (68/68 checks PASS).
+
+| Variant | Candidates `pn0` / `pn3` | TP `pn0` / `pn3` | FN `pn0` / `pn3` | Dice `pn0` | Dice `pn3` | **DevelopmentScore** | Δ vs baseline | Δ vs opening |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| baseline | 146,729 / 134,794 | 3,035 / 2,952 | 477 / 560 | 0.040402 | 0.042688 | 0.041545 | 0 | – |
+| opening (EXP-030) | 70,878 / 67,066 | 2,107 / 2,013 | 1,405 / 1,499 | 0.056647 | 0.057043 | **0.056845** | +0.015300 | 0 |
+| opening + closing | 72,070 / 68,258 | 2,120 / 2,019 | 1,392 / 1,493 | 0.056098 | 0.056263 | 0.056181 | +0.014636 | **−0.000665** |
+
+| Change vs opening | `pn0` | `pn3` |
+|---|---:|---:|
+| Added by closing (TP / FP) | 1,192 (13 / 1,179) | 1,192 (6 / 1,186) |
+| TP share of added; opening FN recovered | 1.1 %; 0.9 % | 0.5 %; 0.4 % |
+| Dilation stage added (TP / FP) | 43,360 (428 / 42,932) | 39,829 (488 / 39,341) |
+| Kept by the erosion stage: TP; FP | 3.0 %; 2.7 % | 1.2 %; 3.0 % |
+
+The equal totals of 1,192 added voxels in `pn0` and `pn3` are a coincidence; the TP/FP split differs.
+
+| Opening-FN by opening-candidate neighbours | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `pn0` FN (recovered) | 977 (0) | 41 (0) | 137 (2) | 217 (3) | 26 (3) | 6 (4) | 0 | 1 (1) | 0 |
+| `pn3` FN (recovered) | 1,011 (0) | 46 (0) | 160 (1) | 235 (1) | 35 (1) | 12 (3) | 0 | 0 | 0 |
+
+(`results/metrics/exp031_closing_summary.csv`, `exp031_closing_score_comparison.csv`, `exp031_closing_change_analysis.csv`, `exp031_fn_gap_recovery.csv`. Figures: `exp031_closing_probe_{pn0,pn3}.png`, `exp031_closing_errors_{pn0,pn3}.png`, `exp031_closing_added_{pn0,pn3}.png`.)
+
+**Result: EXP-030 OPENING REMAINS THE BEST OBSERVED MORPHOLOGY CANDIDATE SO FAR.** Closing lowers the score in both conditions (Δ −0.000665 vs opening). It stays above the Phase-60 baseline (+0.014636), but only because of the opening.
+
+- **Local gaps / lesion borders (H1, only weakly supported):** closing recovers only 13 / 6 of the 1,405 / 1,499 opening FN. Recovery is somewhat more likely in the bins with 4–7 opening neighbours, but most border FN remain.
+- **Completely missing small lesions (H2 supported):** about 70 % of the opening FN (977 / 1,011) have **no** opening candidate in their 8-neighbourhood, and none of them is recovered. Closing cannot recreate lesions that the opening removed entirely.
+- **FP cost (H3):** 99 % of the added voxels are FP, so the score drops. The erosion stage removes about 97 % of the dilation-stage additions, TP and FP alike: closing is not selective.
+- **Fusion / bridging (H4, supported visually):** the few added voxels lie mostly in narrow gaps between and inside the ventricle-compatible regions. At k = 91 the thin separation between the two ventricle-like regions is partly filled, which adds bridging; a few voxels are added at lesion borders (k = 102).
+- **Dense fluid-like FP (H5 supported):** these regions are unchanged apart from these small fills.
+- **H6:** opening + closing does not beat opening alone.
+- **Why so little effect:** the opening has already smoothed the candidate regions, so few gaps narrower than the 3×3 element remain. Closing has little to fill, and what it fills is mostly between FP regions.
+- **Scope of the conclusion:** EXP-031 shows that standard 2D closing with square 3×3, applied after the square-3×3 opening, adds no value on the development set. It does not show that closing is useless in general.
+- **Not final:** these results are limited to square 3×3. **No morphology operation or structuring element is selected.** EXP-026 / Phase 60 remains the canonical candidate baseline, and `config.m` is unchanged.
+
+These are development results; no reconstruction, hole filling, component analysis, size rule or held-out data was used. **Phase 64 COMPLETE.** Next: Phase 65 (structuring-element selection), not started.
+
+### 13.44 Phase 65: structuring-element selection for standard opening (EXP-032)
+
+- **Why opening:** it is the only morphology family that improved the candidate mask. Erosion (EXP-029), dilation (EXP-029) and closing after opening (EXP-031) all scored lower. Phase 65 changes only its structuring element (SE).
+- **Pre-registered grid** (log, before running), with every candidate opened independently from the Phase-60 `candidateMask` (2D slice-wise, one `imopen`, AND EXP-021):
+
+| Candidate | MATLAB | Support | Elements | Motivation |
+|---|---|---|---:|---|
+| square3 | `strel('square', 3)` | 3×3 | 9 | EXP-030 reference |
+| diamond1 | `strel('diamond', 1)` | 3×3 | 5 | sparser at the same extent: may keep more thin/small lesions |
+| square5 | `strel('square', 5)` | 5×5 | 25 | larger, more aggressive: more FP removed, more lesion loss |
+| diamond2 | `strel('diamond', 2)` | 5×5 | 13 | same 5×5 extent, sparser: separates density from scale |
+
+  - No line, disk or custom SE was used, and the grid was not extended after the results.
+  - All 8 predictions were saved before the GT was loaded, and one SE is shared by `pn0` and `pn3`.
+  - Selection follows Phase 37: highest DevelopmentScore, no tolerance.
+- **Code:** `experiments/structuring_element_grid_check.m` (34/34 ok) and `experiments/exp032_structuring_element_selection.m` (81/81 checks PASS).
+  - square3 reproduces EXP-030 exactly (masks and Dice).
+  - The selected masks are exact copies of the frozen winner.
+  - `config.m` is unchanged (checked).
+
+| Rank | SE | Dice `pn0` | Dice `pn3` | Weaker | **DevelopmentScore** | Δ vs no morphology | Δ vs square3 |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | **square3** | 0.056647 | 0.057043 | 0.056647 | **0.056845** | +0.015300 | 0 |
+| 2 | diamond1 | 0.053521 | 0.054352 | 0.053521 | 0.053937 | +0.012392 | −0.002908 |
+| 3 | diamond2 | 0.051060 | 0.052555 | 0.051060 | 0.051808 | +0.010263 | −0.005038 |
+| 4 | square5 | 0.038859 | 0.036449 | 0.036449 | 0.037654 | −0.003891 | −0.019191 |
+
+The no-morphology reference (Phase 60) scores 0.041545.
+
+| SE | Voxels `pn0` / `pn3` | TP preserved `pn0` / `pn3` | FP removed `pn0` / `pn3` | FN `pn0` / `pn3` |
+|---|---:|---:|---:|---:|
+| diamond1 | 86,097 / 80,716 | 79.0 % / 77.5 % | 41.8 % / 40.5 % | 1,114 / 1,223 |
+| square3 | 70,878 / 67,066 | 69.4 % / 68.2 % | 52.1 % / 50.7 % | 1,405 / 1,499 |
+| diamond2 | 55,203 / 53,571 | 49.4 % / 50.8 % | 62.6 % / 60.5 % | 2,013 / 2,012 |
+| square5 | 42,501 / 41,427 | 29.5 % / 27.7 % | 71.0 % / 69.2 % | 2,618 / 2,693 |
+
+(`results/metrics/exp032_structuring_element_scores.csv`, `exp032_structuring_element_condition_metrics.csv`, `exp032_structuring_element_tradeoff.csv`, `exp032_selected_structuring_element.csv`. Figures: `exp032_se_candidates_{pn0,pn3}.png`, `exp032_se_errors_{pn0,pn3}.png`. There is no selected-vs-square3 figure, because square3 won.) No SE leaves any isolated voxel.
+
+**Decision: the SELECTED DEVELOPMENT SE for standard opening is square3** (`strel('square', 3)`, 3×3 support, 9 elements), with DevelopmentScore 0.056845, shared by `pn0` and `pn3`.
+
+- **square3 remains** the provisional element used since Phase 62. It won on the numbers only, with no preference, and is better than every other SE in **both** conditions.
+- **Canonical selected masks:** `data/processed/phase65_t2_{pn0,pn3}_selected_opening_candidate.mat`.
+- **Status:** a development selection, **not a frozen project parameter**. `config.m` is unchanged, and the candidate generation is still EXP-026.
+
+**Interpretation:**
+
+- **Aggressiveness ordering:** by the share of TP preserved, the four SEs order as diamond1 (79 %) > square3 (69 %) > diamond2 (50 %) > square5 (28 %). The FP removal follows the opposite order (41 % < 52 % < 62 % < 71 %).
+  - The score peaks at **square3**, an interior point of this range.
+  - diamond1 keeps more lesion voxels but also many more FP.
+  - The 5×5 elements remove more FP but lose too many lesions.
+- **Shape at 3×3 (square3 vs diamond1):** the denser square scores higher. diamond1 survives on thin structures with a cross-shaped core and leaves small "+"-shaped fragments of thin FP (fixed slices).
+- **Shape at 5×5 (square5 vs diamond2):** here the sparser diamond scores much higher. square5 erases most lesions (k = 102 mostly FN) and produces blocky regions.
+- **Scale (square3 → square5, diamond1 → diamond2):** a larger scale lowers the score in both families. square5 even falls below the no-morphology reference.
+- **Isolated / thin FP:** every SE removes all isolated voxels and most thin rims; diamond1 keeps the most thin fragments.
+- **Small / thin lesions:** lesion loss grows steadily with aggressiveness, from 21–22 % (diamond1) to 71–72 % (square5) of the baseline TP.
+- **Dense fluid-like FP (H4 supported):** the regions compatible with the ventricles and cisterns persist with every SE. No SE solves this problem.
+- **Hypotheses:** H1–H3 are supported. H5: square3 received no preference.
+- **Limitations:**
+  - The grid is small and deliberately not exhaustive (no disks, no other sizes or shapes).
+  - square3 is not on an aggressiveness boundary of the grid, but the result does **not** claim a global optimum.
+  - The diamond1 → square3 → diamond2 steps are coarse.
+
+These are development results; no closing, reconstruction, component analysis or held-out data was used. **Phase 65 COMPLETE.** Next: Phase 66 (before/after morphology comparison), not started.

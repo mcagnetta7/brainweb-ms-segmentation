@@ -385,6 +385,33 @@ $$
   - It had the highest pre-defined Phase-37 DevelopmentScore, the full-volume 3D Dice averaged over `pn0` and `pn3` (0.028849, against 0.027325 for manual and 0.018026 for iterative), with no tie tolerance.
   - This is the current **development baseline**, not the final segmentation pipeline. All Dice values are below 0.04, dominated by bright non-lesion structures.
   - The manual and iterative methods remain documented alternatives.
+- **Phase 58 (EXP-026) replaced it as the CURRENT selected thresholding method: multi-level Otsu** (`multithresh(T2(brainMask), 2)` per volume, `imquantize` into 3 classes, candidate = `brainMask & (class == 3)`, equivalent to `T2 > upper threshold`).
+  - N = 2 and the Class-3-only candidate were fixed before any result; no other N or class combination was tested.
+  - DevelopmentScore 0.041545 against 0.028849 for EXP-024 (no tie tolerance). Its thresholds are data-derived and not project parameters.
+  - Still a **development baseline**, not the final pipeline: Dice is about 0.04, the candidates are still about 40 times the GT volume and dominated by bright CSF-compatible structures, and about 14–16 % of the GT voxels fall in Class 2.
+- **Phase 59 (EXP-027) evaluated variable / local thresholding and REJECTED it; EXP-026 is retained.**
+  - The method was the course rule T = a·m + b·s, 2D slice-wise, with masked local mean and population standard deviation.
+  - Of the pre-registered grid (a = 1, window {9, 21, 41} × b {0.5, 1.0, 1.5}), the best configuration was W21_B15 with DevelopmentScore 0.036103, below 0.041545.
+  - It suppresses uniform bright CSF but loses periventricular lesion voxels next to the ventricles.
+- **Phase 60: current development candidate-generation pipeline** (`src/segmentation/generateLesionCandidateMask.m`, parameters from `cfg.segmentation`):
+
+  ```text
+  T2 -> double -> /4095 -> EXP-021 brainMask
+  -> levels = multithresh(T2norm(brainMask), 2) (per volume) -> imquantize -> Class 3
+  -> candidateMask = brainMask AND (class == 3)
+  ```
+
+  - `candidateMask` is an **intermediate lesion-candidate volume**, not the final lesion segmentation. It knowingly contains bright non-lesion structures; no morphology or other post-processing rule is defined yet.
+  - Canonical development outputs: `data/processed/phase60_t2_{pn0,pn3}_candidate_mask.mat`, identical voxel for voxel to the EXP-026 predictions.
+- **Phase 61 diagnostic conclusion (EXP-028, no algorithm change):**
+  - The dominant candidate error is large fluid-like regions in the lesion intensity class, fused with periventricular lesions; simple morphology alone is unlikely to solve it.
+  - Isolated and thin false positives (erosion/opening) and lesion-border misses (dilation) motivate the morphology experiments of Phases 62–65. No operation or structuring element is selected yet.
+- **Phase 62 (EXP-029):** one-step erosion and dilation were evaluated as a 2D probe with square 3×3. Both worsen the baseline DevelopmentScore, and the final morphology remains unselected. Square 3×3 is not a selected structuring element.
+- **Phase 63 (EXP-030):** standard opening was evaluated with the same provisional square-3 structuring element as Phase 62. It improves the DevelopmentScore to 0.056845 (+0.0153) but loses small lesions. Final morphology and structuring element remain unselected.
+- **Phase 64 (EXP-031):** standard closing was evaluated after the Phase-63 opening candidate (brain mask applied after the complete closing). It slightly lowers the score (0.056181), so the opening remains the best observed candidate. Final morphology remains unselected.
+- **Phase 65 (EXP-032): selected development structuring element for standard opening = `strel('square', 3)`** (3×3 support, 9 elements, 2D slice-wise, one opening, shared by `pn0` and `pn3`).
+  - It was chosen by DevelopmentScore (0.056845) among square3, diamond1, square5 and diamond2.
+  - It is not globally frozen. The candidate generation (EXP-026) is unchanged, and no component rules are defined. The formal before/after comparison is Phase 66.
 
 ---
 

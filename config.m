@@ -208,6 +208,11 @@ function cfg = config()
     % Dice su pn0+pn3): Otsu (graythresh) su T2(brainMask), stimato per ogni
     % volume. È la baseline di sviluppo, NON la pipeline finale; nessun
     % valore di soglia è fissato qui (la soglia è un'uscita dell'algoritmo).
-    cfg.segmentation.thresholdMethod = "otsu";
+    % Fase 58 (EXP-026): sostituito da Otsu multi-livello (multithresh con 2
+    % soglie, 3 classi, candidato = classe più alta), DevelopmentScore più
+    % alto di Otsu binario. Le soglie restano uscite dell'algoritmo per volume.
+    cfg.segmentation.thresholdMethod = "multithresh";
+    cfg.segmentation.multithresh.numberOfThresholds = 2;
+    cfg.segmentation.multithresh.candidateClass = 3;
 
 end
