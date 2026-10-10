@@ -615,7 +615,11 @@ Maintain this table as experiments are completed.
 | EXP-018 | T1 slice-to-slice propagation with marker-controlled watershed (Phase 50, supplementary; inter-slice authorized by user) | T1 msles2 1mm rf0, pn0 + pn3 | Seed = EXP-012 at k = 75; markers from neighbour mask eroded/dilated by disk 3; 3×3 gradient watershed | n/a | n/a | n/a | n/a | n/a | PROMISING BUT PROBLEMATIC: central + superior brain-scale with both hemispheres; inferior drift into orbit/face/neck; vertex lag |
 | EXP-019 | Asymmetric slice-to-slice propagation (Phase 50, supplementary) | T1 msles2 1mm rf0, pn0 + pn3 | As EXP-018 but erosion disk 5, dilation disk 1 | n/a | n/a | n/a | n/a | n/a | REJECTED: collapse, one-pixel rim lost per slice (ridge pixels excluded + 1-px dilation) |
 | EXP-020 | EXP-019 with ridge pixels assigned to foreground (Phase 50, supplementary) | T1 msles2 1mm rf0, pn0 + pn3 | Candidate = NOT background-touched basins AND NOT background | n/a | n/a | n/a | n/a | n/a | REJECTED: no collapse, no orbital drift, but superior hemisphere loss, pn3 stops at k = 145, inferior dark tissue; radii too restrictive |
-| EXP-021 | 3D erode → largest 3D component → 3D dilate (Phase 50, exploratory exception; 3D not in course PDF) | T1 msles2 1mm rf0, pn0 + pn3 | Sphere r = 3, 26-conn, AND raw, 2D fill | n/a | n/a | n/a | n/a | n/a | Technically ACCEPTABLE candidate (both hemispheres, skull base without face, IoU pn0/pn3 0.985); adoption pending user decision |
+| EXP-021 | 3D erode → largest 3D component → 3D dilate (Phase 50, exploratory exception; 3D not in course PDF) | T1 msles2 1mm rf0, pn0 + pn3 | Sphere r = 3, 26-conn, AND raw, 2D fill | n/a | n/a | n/a | n/a | n/a | Technically ACCEPTABLE candidate (both hemispheres, skull base without face, IoU pn0/pn3 0.985); adoption pending user decision; later frozen, Phase-51 validated and applied (Phase 52) |
+| EXP-022 | Manual global T2 threshold (Phase 54) | T2 msles2 1mm rf0, pn0 + pn3, inside EXP-021 | One manual threshold T_raw = 3400 (T_norm = 3400/4095), strict >, from Phase-40 histograms | not computed | not computed | n/a | not computed | not computed | REFERENCE ESTABLISHED (candidates 4.20 % / 2.52 % of brain; mostly hyperintense structures compatible with CSF spaces) |
+| EXP-023 | Iterative global T2 threshold (Phase 55) | T2 msles2 1mm rf0, pn0 + pn3, inside EXP-021 | Course iterative rule: T0 = mean, partition >= / <, eps = 0.5/4095; T_iter 2323.13 (pn0) / 2421.88 (pn3) raw-eq. | not computed | not computed | n/a | not computed | not computed | RESULT ESTABLISHED (candidates 50.25 % / 14.85 % of brain; splits main tissue populations) |
+| EXP-024 | Otsu global T2 threshold (Phase 56) | T2 msles2 1mm rf0, pn0 + pn3, inside EXP-021 | graythresh(T2(brainMask)) per condition, same algorithm; T_otsu 2713.94 (pn0) / 2408.82 (pn3) raw-eq. | not computed | not computed | n/a | not computed | not computed | RESULT ESTABLISHED (candidates 13.22 % / 15.43 % of brain; two-class histogram split, not lesion-specific) |
+| EXP-025 | Quantitative thresholding comparison (Phase 57) | Frozen EXP-022/023/024 predictions vs GT label 10, pn0 + pn3 | Full-volume 3D Dice; DevelopmentScore = mean(pn0, pn3); no tie tolerance | 0.0309 (Otsu) | 0.0268 (Otsu) | 0.028849 (Otsu) | not computed | not computed | SELECTED INITIAL METHOD: EXP-024 Otsu (manual 0.027325, iterative 0.018026) |
 
 Preprocessing experiments without segmentation use `n/a` for the segmentation metrics.
 
@@ -723,9 +727,9 @@ as final project evidence.
 
 ## 11. Current Experiment Status
 
-No segmentation experiments have been performed yet.
+The first lesion-segmentation experiment (EXP-022, Phase 54) has been performed. It is a reference, not a selected method; no GT-based lesion metric has been computed yet.
 
-Dataset preparation, loading, validation, visualization, the development/test and tuning protocols (Phases 17–37), the exploratory intensity analyses (Phases 38–41) and the preprocessing definitions (Phases 42–44) have been completed. Phase 40 is deferred until a brain mask exists.
+Dataset preparation, loading, validation, visualization, the development/test and tuning protocols (Phases 17–37), the exploratory intensity analyses (Phases 38–41), the preprocessing definitions (Phases 42–44), the brain mask (Phases 48–52, EXP-021 validated and applied), the brain-only histograms (Phase 40, resumed after Phase 52) and the baseline definition (Phase 53) have been completed.
 
 Preprocessing experiments so far:
 
@@ -763,6 +767,28 @@ Preprocessing experiments so far:
   - Adoption as the project brain mask is pending the user's decision.
   - 2026-10-06: the user **froze EXP-021 (r = 3)** as the Phase-50 candidate for the Phase-51 visual validation.
   - Robustness check with r = 2 and r = 4 (descriptive only, declared before the run): the largest 3D component is the brain for every radius and both noise levels. IoU with r = 3 is ≥ 0.967 and `pn0`/`pn3` IoU is 0.978–0.989. r = 4 leaves the ventricles unfilled at k = 91. r stays 3.
+  - Phase 51: PASS WITH DOCUMENTED LIMITATIONS; Phase 52: applied to T2. EXP-021 is the operational development brain-support mask.
+
+Lesion-segmentation experiments:
+
+- EXP-022 (Phase 54, manually defined global T2 threshold, T_raw = 3400, T_norm = 3400/4095, strict `>`, inside EXP-021): REFERENCE ESTABLISHED.
+  - The threshold was chosen from the Phase-40 histograms only, frozen before any candidate, and is the same for `pn0` and `pn3`.
+  - Candidates: 70,866 voxels (4.20 % of the brain mask) in `pn0` and 42,046 (2.52 %) in `pn3`, a ratio of 0.60.
+  - The candidates are mostly hyperintense structures anatomically compatible with CSF spaces (ventricles, cisterns), plus scattered small bright spots; no GT-based classification. `pn3` is less permissive and more speckled.
+  - No GT metric was computed (comparison in Phase 57).
+- EXP-023 (Phase 55, course iterative global threshold on T2(brainMask); same rule for both conditions): RESULT ESTABLISHED.
+  - T_iter = 2323.13 (`pn0`, 2 updates) and 2421.88 (`pn3`, 39 updates) raw-equivalent.
+  - Candidates: 50.25 % / 14.85 % of the brain mask.
+  - The method converges correctly but splits the main intensity populations of the parenchyma (not a bright-population detector) and depends on the histogram shape; the same rule behaves very differently across noise conditions and does not compensate the intensity shift.
+  - Comparison in Phase 57.
+- EXP-024 (Phase 56, MATLAB graythresh/Otsu on T2(brainMask); same algorithm for both conditions): RESULT ESTABLISHED.
+  - T_otsu = 2713.94 (`pn0`, 169/255) and 2408.82 (`pn3`, 150/255) raw-equivalent.
+  - Candidates: 13.22 % / 15.43 % of the brain mask.
+  - A meaningful two-class histogram split, but not lesion-specific; CSF-compatible structures are fully selected. The `pn0`/`pn3` fractions are closer than with EXP-022/023, but the thresholds differ by about 305 raw levels.
+  - Comparison in Phase 57.
+- EXP-025 (Phase 57, full-volume 3D Dice of the frozen EXP-022/023/024 predictions against GT label 10; DevelopmentScore = (Dice_pn0 + Dice_pn3)/2, no tie tolerance): **SELECTED INITIAL THRESHOLDING METHOD: EXP-024 Otsu** (0.028849; manual 0.027325, iterative 0.018026).
+  - All Dice values are below 0.04, dominated by bright non-lesion structures compatible with CSF.
+  - This is a development baseline, not the final pipeline.
 
 Code debugging, syntax fixes and checks that a MATLAB function works are not experiments and are not recorded in this log.
 
@@ -4572,4 +4598,727 @@ the chosen candidate).
 
 ```text
 Open question 17 open; Phase 40 deferred until Phases 51-52.
+```
+
+---
+
+### EXP-022 — Manually defined global T2 threshold (Phase 54)
+
+#### Status
+
+```text
+COMPLETED - REFERENCE ESTABLISHED (not a selected final method)
+```
+
+#### Date
+
+```text
+2026-10-09
+```
+
+#### Objective
+
+```text
+Establish an interpretable initial reference: what happens if lesion candidates are
+defined by ONE manually chosen global upper-intensity threshold on unfiltered T2 inside
+the validated EXP-021 brain support? Not an optimization.
+```
+
+#### Hypothesis
+
+```text
+None about optimality. Expected: a single global threshold will reveal the limits of
+plain thresholding, in particular the bright ventricular CSF inside the brain support
+and the pn0/pn3 intensity mismatch (open question 17).
+```
+
+#### Baseline / Reference
+
+```text
+Phase-53 baseline definition: lesionCandidateMask = brainMask AND (T2_norm > T).
+```
+
+#### Dataset Configuration
+
+```text
+T2, msles2, 1 mm, rf0, pn0 + pn3 (development only). EXP-021 masks per condition
+(pn0 -> pn0, pn3 -> pn3). No GT, no labels, no held-out data.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+T2 pn0: data/raw/msles2/mri/t2_ai_msles2_1mm_pn0_rf0.raws
+T2 pn3: data/raw/msles2/mri/t2_ai_msles2_1mm_pn3_rf0.raws
+Masks:  data/processed/exp021_t1_{pn0,pn3}_3d_erode_select_dilate_candidate.mat
+```
+
+#### Processing Pipeline
+
+```text
+raw T2 -> double -> /4095 -> NO FILTER -> EXP-021 brainMask
+       -> thresholdLesionCandidates(T2norm, brainMask, T_normalized)  (strict >)
+       -> lesionCandidateMask
+```
+
+#### Changed Component
+
+```text
+First instantiation of the Phase-53 baseline with a manual threshold.
+```
+
+#### Parameters
+
+```text
+T_raw = 3400 ; T_normalized = 3400/4095 (exact) ; comparator ">" ; same T for pn0 and pn3.
+Selection: Phase-40 brain-only T2 histograms only (phase40_brain_only_histogram_counts.csv,
+columns pn0_T2 / pn3_T2). No unique common valley (pn3 valley ~3250, pn0 minimum ~3550,
+pn0 step ~3430): 3400 chosen manually as one compromise between them. Frozen and
+pre-registered (BRAINWEB_DATASET_NOTES.md section 13.33) before any candidate.
+Disclosure: Phase-41 offline GT class statistics were known; not used, value not
+adjusted toward or away from them. Exactly one threshold, no sweep.
+```
+
+#### Implementation
+
+```text
+experiments/exp022_manual_global_threshold_t2.m (uses src/segmentation/thresholdLesionCandidates.m)
+```
+
+#### Git Version
+
+```text
+Commit: 742e04e
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB R2026b. All 31 checks PASS (threshold domain and exact equivalence; geometry,
+finiteness and [0,1] range of T2; mask logical; output = brainMask & (T2norm > T); no
+candidate outside the mask; inputs unchanged; saved masks reload identically; same T for
+both conditions; no GT loader referenced in the script).
+```
+
+#### Quantitative Results
+
+```text
+                                         pn0                   pn3
+Brain-mask voxels                        1,688,787             1,668,366
+Candidate voxels                         70,866                42,046
+Fraction of brain mask                   0.041963 (4.20 %)     0.025202 (2.52 %)
+Fraction of whole volume                 0.0099683             0.0059144
+Slices with candidates; first / last     141; 12 / 152         120; 12 / 146
+Candidate raw T2 min / max               3401 / 4030           3401 / 4064
+Candidate raw T2 mean / median           3790.5 / 3846         3578.1 / 3571
+pn3 - pn0 brain fraction: -0.016761; pn3 / pn0 = 0.6006.
+Descriptive only: no GT-based metric computed.
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (Phase 57 / evaluation phases).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp022_manual_threshold_selection.png
+results/figures/exp022_t2_pn0_candidate_overlay.png, exp022_t2_pn3_candidate_overlay.png
+results/figures/exp022_t2_candidate_contact_sheet_pn0.png, ..._pn3.png
+
+- Candidates are mostly large hyperintense structures anatomically compatible with CSF
+  spaces (no GT-based classification): lateral ventricles (k ~ 71-101),
+  third ventricle, fourth ventricle (k ~ 31-41), basal cisterns and the inter-hemispheric
+  fissure (k ~ 61, 101-121).
+- In addition, many small scattered bright spots along sulci and in the parenchyma.
+- pn3: the same structures but less complete (speckled ventricles) and fewer candidates
+  overall; more isolated single-pixel responses.
+- No candidates near the vertex above k = 152 / 146, and none outside the brain support.
+```
+
+#### Comparison with Reference
+
+```text
+First lesion-candidate reference; to be compared with Phase 55 (iterative) and Phase 56
+(Otsu) in Phase 57.
+```
+
+#### Interpretation
+
+```text
+The threshold selects predominantly hyperintense structures anatomically compatible
+with CSF spaces (ventricles, cisterns); T2 hyperintensity alone is therefore not
+lesion-specific. No TP/FP classification is made without GT. The common absolute threshold
+behaves differently across noise conditions (pn3 candidates = 0.60 x pn0), consistent
+with the downward pn3 intensity shift (open question 17). Not corrected.
+```
+
+#### Decision
+
+```text
+REFERENCE ESTABLISHED. Not kept or rejected as a final method; threshold not optimized
+and not a project parameter (not in config.m).
+```
+
+#### Next Experiment
+
+```text
+Phase 55 - iterative thresholding (not started).
+```
+
+#### Notes
+
+```text
+No morphology, no connected-component analysis, no region growing, no multimodal use, no
+GT, no held-out data. The threshold-selection figure title is cut at the edges (display
+only).
+```
+
+---
+
+### EXP-023 — Iterative global thresholding on brain-only T2 (Phase 55)
+
+#### Status
+
+```text
+COMPLETED - RESULT ESTABLISHED (comparison deferred to Phase 57)
+```
+
+#### Date
+
+```text
+2026-10-09
+```
+
+#### Objective
+
+```text
+Behaviour of the course-style automatic iterative global threshold on brain-only T2
+(development pn0 + pn3).
+```
+
+#### Hypothesis
+
+```text
+None about optimality. Observe what a data-derived two-class iterative split produces,
+and how it reacts to the pn0/pn3 intensity difference (open question 17).
+```
+
+#### Baseline / Reference
+
+```text
+EXP-022 (manual T_raw = 3400), descriptive comparison only.
+```
+
+#### Dataset Configuration
+
+```text
+T2, msles2, 1 mm, rf0, pn0 + pn3; EXP-021 masks per condition. No GT, no labels, no
+held-out data.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+brainValues = T2_norm(brainMask) per condition (never the zero-padded volume).
+```
+
+#### Processing Pipeline
+
+```text
+raw T2 -> double -> /4095 -> NO FILTER -> brainValues = T2_norm(brainMask)
+   -> T0 = mean(brainValues)
+   -> repeat: R_high = >= T, R_low = < T; T_next = (mu_low + mu_high)/2
+      until abs(T_next - T) < 0.5/4095 (accept T_next); guard 1000 iterations
+   -> thresholdLesionCandidates(T2_norm, brainMask, T_iter)   (strict >)
+```
+
+#### Changed Component
+
+```text
+Automatic iterative threshold estimation (instead of the manual EXP-022 value).
+Course-source note: the written procedure recommends the average intensity as initial
+value; the slide MATLAB example uses 0.5*mean. EXP-023 follows the written procedure.
+```
+
+#### Parameters
+
+```text
+Same rule for pn0 and pn3: T0 = mean; partition >= / <; T_next = (mu_low + mu_high)/2;
+epsilon = 0.5/4095 (project choice: half a raw level; PDF uses 0.5 on im2double data);
+maxIterations = 1000 (safety only). Not tuned. Final thresholds are algorithm outputs.
+```
+
+#### Implementation
+
+```text
+src/segmentation/estimateIterativeThreshold.m (synthetic check:
+experiments/iterative_threshold_function_check.m, 19/19 PASS)
+experiments/exp023_iterative_threshold_t2.m
+```
+
+#### Git Version
+
+```text
+Commit: 742e04e
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB R2026b. All 41 checks PASS (inputs; T0 = mean; history re-verified per iteration
+against the actual partitions; convergence before the guard; threshold finite in [0,1];
+output = brainMask & (T2_norm > T_iter); no candidate outside mask; inputs unchanged;
+history and masks reload identically; no GT loader referenced).
+```
+
+#### Quantitative Results
+
+```text
+                                         pn0                   pn3
+T0 (raw-equivalent)                      2324.81               2102.41
+T_iter (normalized / raw-equivalent)     0.567309 / 2323.13    0.591423 / 2421.88
+Updates; final delta (raw)               2; 0.481              39; 0
+Final mu_low / mu_high (raw)             1984.9 / 2661.3       1967.5 / 2876.3
+Candidate voxels                         848,576               247,703
+Fraction of brain / of volume            50.25 % / 11.94 %     14.85 % / 3.48 %
+Slices with candidates; first / last     160; 1 / 160         154; 1 / 156
+Candidate raw min / max / mean / median  2324/4030/2661.3/2460 2422/4064/2876.3/2742
+T_iter pn3 - pn0 = +98.74 raw; T_iter - 3400 = -1076.87 (pn0), -978.12 (pn3).
+EXP-022 candidate fraction: 4.20 % (pn0), 2.52 % (pn3).
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (Phase 57).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp023_iterative_threshold_convergence.png
+results/figures/exp023_iterative_threshold_histograms.png
+results/figures/exp023_t2_{pn0,pn3}_candidate_overlay.png
+results/figures/exp023_t2_candidate_contact_sheet_{pn0,pn3}.png
+
+pn0: T_iter between the dominant narrow peak (~1859) and the second peak (~2420); half the
+     brain support selected: large parenchymal regions of medium-high T2 intensity (visual
+     observation, no anatomical labels), plus ventricles, cisterns, sulcal fluid.
+pn3: slow rise over 39 updates to 2421.9 (above pn0); ventricles/cisterns plus fragmented,
+     speckled medium-high-intensity parenchymal pixels, mostly along the outer brain surface.
+Hyperintense structures compatible with CSF spaces fully selected in both conditions.
+```
+
+#### Comparison with Reference
+
+```text
+Thresholds ~1000 raw levels below EXP-022; candidate fraction 12x (pn0) and 5.9x (pn3)
+larger. No method declared better (Phase 57).
+```
+
+#### Interpretation
+
+```text
+The course iterative threshold converges correctly, but the brain-only T2 distribution
+does not satisfy well the implicit assumption of a bimodal separation useful for lesion
+segmentation: in pn0 the method essentially splits the main intensity populations of the
+parenchyma; in pn3 the noise strongly changes the convergence point and the candidate
+fraction. The fixed point depends on the histogram shape (narrow peaks in pn0 vs
+noise-broadened modes in pn3), so the same rule does not compensate the intensity shift.
+2 vs 39 updates is not a convergence problem (both converge; history verified). Open
+question 17 unresolved; no harmonization. Not rejected: comparison in Phase 57.
+```
+
+#### Decision
+
+```text
+RESULT ESTABLISHED - comparison deferred to Phase 57. Not kept/rejected as final method.
+```
+
+#### Next Experiment
+
+```text
+Phase 56 - Otsu thresholding (not started).
+```
+
+#### Notes
+
+```text
+No GT, no metrics, no tuning, no initial-threshold sweep, no filter, no morphology, no
+connected components, no T1/PD intensity, no held-out data.
+```
+
+---
+
+### EXP-024 — Otsu global thresholding on brain-only T2 (Phase 56)
+
+#### Status
+
+```text
+COMPLETED - RESULT ESTABLISHED (final threshold-method comparison deferred to Phase 57)
+```
+
+#### Date
+
+```text
+2026-10-10
+```
+
+#### Objective
+
+```text
+Threshold and candidate segmentation produced by MATLAB's course-supported Otsu
+(graythresh) applied automatically, as-is, to brain-only T2 (development pn0 + pn3).
+```
+
+#### Hypothesis
+
+```text
+None about optimality. Otsu always returns a two-class partition; the brain-only T2
+distributions do not show a clearly bimodal separation attributable to a lesion class and
+a non-lesion class (Phase 40), so the two classes may not correspond to the categories of
+interest.
+```
+
+#### Baseline / Reference
+
+```text
+EXP-022 (manual 3400) and EXP-023 (iterative), descriptive comparison from saved CSVs.
+```
+
+#### Dataset Configuration
+
+```text
+T2, msles2, 1 mm, rf0, pn0 + pn3; EXP-021 masks per condition. No GT, no labels, no
+held-out data.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+brainValues = T2_norm(brainMask) per condition (artificial zeros and full volume excluded).
+```
+
+#### Processing Pipeline
+
+```text
+raw T2 -> double -> /4095 -> NO FILTER -> brainValues = T2_norm(brainMask)
+   -> T_otsu = graythresh(brainValues)   (once, unmodified)
+   -> thresholdLesionCandidates(T2_norm, brainMask, T_otsu)   (strict >)
+```
+
+#### Changed Component
+
+```text
+Threshold estimator: MATLAB graythresh (Otsu).
+```
+
+#### Parameters
+
+```text
+None tuned. Same algorithm for pn0 and pn3; thresholds data-derived. Built-in behaviour:
+graythresh uses an internal 256-bin histogram on [0,1] for double input, so T_otsu is a
+multiple of 1/255 (observed 169/255 and 150/255); documented, not a tuning choice.
+```
+
+#### Implementation
+
+```text
+experiments/otsu_threshold_function_check.m (synthetic sanity check, 9/9 PASS)
+experiments/exp024_otsu_threshold_t2.m
+```
+
+#### Git Version
+
+```text
+Commit: 742e04e
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB R2026b. All 37 checks PASS (inputs; T_otsu finite real scalar in [0,1] and identical
+when recomputed; output = brainMask & (T2_norm > T_otsu); no candidate outside the mask;
+inputs unchanged; reload identical; no GT loader referenced).
+```
+
+#### Quantitative Results
+
+```text
+                                         pn0                    pn3
+T_otsu (normalized / raw-equivalent)     0.662745 / 2713.94     0.588235 / 2408.82
+Candidate voxels                         223,202                257,444
+Fraction of brain / of volume            13.22 % / 3.14 %       15.43 % / 3.62 %
+Slices with candidates; first / last     158; 2 / 160           155; 1 / 156
+Candidate raw min / max / mean / median  2714/4030/3243.8/3130  2409/4064/2858.8/2721
+T_otsu pn3 - pn0 = -305.12 raw.
+T_otsu - EXP-022 (3400): -686.06 (pn0), -991.18 (pn3).
+T_otsu - EXP-023: +390.81 (pn0), -13.05 (pn3).
+Candidate fraction EXP-024 / EXP-022 / EXP-023: pn0 13.22 / 4.20 / 50.25 %;
+pn3 15.43 / 2.52 / 14.85 %.
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (Phase 57).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp024_otsu_threshold_histograms.png
+results/figures/exp024_t2_{pn0,pn3}_candidate_overlay.png
+results/figures/exp024_t2_candidate_contact_sheet_{pn0,pn3}.png
+
+pn0: threshold above the second narrow peak (~2420), in the high-intensity tail;
+     hyperintense structures compatible with CSF spaces (ventricles, cisterns, fissure)
+     plus thin bright rims along the outer surface and sulci, small scattered spots.
+pn3: threshold on the upper side of the broad second mode (close to EXP-023); CSF-compatible
+     structures plus fragmented, speckled medium-high-intensity parenchymal pixels.
+```
+
+#### Comparison with Reference
+
+```text
+Between EXP-022 and EXP-023 in pn0; close to EXP-023 in pn3. pn0/pn3 candidate fractions
+closer than with EXP-022/023, but thresholds differ by ~305 raw and the spatial character
+differs. No method declared better.
+```
+
+#### Interpretation
+
+```text
+Otsu returns a meaningful two-class histogram split, but the brain-only T2 distributions
+do not show a clearly bimodal separation attributable to a lesion class and a non-lesion
+class (narrow populations in pn0, broad overlapping modes in pn3), so the two classes do
+not necessarily match the categories of interest and the split is not lesion-specific; CSF-compatible structures are fully selected. The closer pn0/pn3
+fractions are a property of the split, not a harmonization. Open question 17 unresolved.
+```
+
+#### Decision
+
+```text
+RESULT ESTABLISHED - final threshold-method comparison deferred to Phase 57.
+```
+
+#### Next Experiment
+
+```text
+Phase 57 - quantitative thresholding comparison (not started).
+```
+
+#### Notes
+
+```text
+No GT, no metrics, no tuning, no multithresh, no local thresholding, no filter, no
+morphology, no connected components, no T1/PD intensity, no harmonization, no held-out data.
+```
+
+---
+
+### EXP-025 — Quantitative thresholding-method comparison (Phase 57)
+
+#### Pre-registration (written before any Dice value was computed)
+
+```text
+Candidates (frozen saved outputs, not regenerated):
+  EXP-022 manual global threshold    data/processed/exp022_t2_{pn0,pn3}_manual_global_threshold_candidate.mat
+  EXP-023 iterative global threshold data/processed/exp023_t2_{pn0,pn3}_iterative_threshold_candidate.mat
+  EXP-024 Otsu global threshold      data/processed/exp024_t2_{pn0,pn3}_otsu_threshold_candidate.mat
+GT: BrainWeb crisp msles2 (phantom_1.0mm_msles2_crisp.rawb, loadBrainwebGroundTruth),
+    M_GT = (labels == 10), the same M_GT for pn0 and pn3; NOT intersected with brainMask.
+Metric: full-volume 3D Dice = 2|P & G| / (|P| + |G|) on 181x217x181 (no per-slice mean).
+Selection score (Phase 37): DevelopmentScore = (Dice_pn0 + Dice_pn3) / 2, equal weights.
+Near-tie tolerance: NONE. The numerically highest DevelopmentScore wins.
+Exact-tie breakers only: (1) higher min(Dice_pn0, Dice_pn3); (2) simpler, more
+interpretable method; (3) fewer tunable parameters.
+No other metric is computed (IoU, precision, recall, specificity, volume error,
+lesion-wise and slice-wise metrics belong to later evaluation phases).
+Outcome selects the INITIAL thresholding method only, not the final pipeline.
+```
+
+#### Status
+
+```text
+COMPLETED - INITIAL THRESHOLDING METHOD SELECTED: EXP-024 (Otsu)
+```
+
+#### Date
+
+```text
+2026-10-10
+```
+
+#### Objective
+
+```text
+Compare the three frozen baseline thresholding methods quantitatively and select the
+initial thresholding method with the pre-defined Phase-37 rule.
+```
+
+#### Hypothesis
+
+```text
+None. Selection by the pre-registered DevelopmentScore rule.
+```
+
+#### Baseline / Reference
+
+```text
+EXP-022 (manual), EXP-023 (iterative), EXP-024 (Otsu): saved candidate masks.
+```
+
+#### Dataset Configuration
+
+```text
+T2-based predictions on pn0 + pn3 (development). GT: BrainWeb crisp msles2, label 10,
+same M_GT for both conditions, not intersected with brainMask. No held-out data.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Saved lesionCandidateMask files of EXP-022/023/024; loadBrainwebGroundTruth.
+```
+
+#### Processing Pipeline
+
+```text
+load frozen predictions -> integrity checks -> M_GT = labels == 10
+-> Dice = 2|P&G|/(|P|+|G|) on the full volume -> DevelopmentScore = mean(pn0, pn3)
+-> rank (no tolerance) -> select argmax
+```
+
+#### Changed Component
+
+```text
+None (evaluation only; no prediction regenerated).
+```
+
+#### Parameters
+
+```text
+No near-tie tolerance (pre-registered). Exact-tie breakers not needed (no tie).
+```
+
+#### Implementation
+
+```text
+experiments/exp025_thresholding_comparison.m (local Dice with synthetic sanity check;
+no reusable evaluation framework yet)
+config.m: cfg.segmentation.thresholdMethod = "otsu" (method only, development baseline)
+```
+
+#### Git Version
+
+```text
+Commit: 742e04e
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB R2026b. All 72 checks PASS (synthetic Dice; GT size/labels/label-10 mask; each
+prediction file, size, logical, metadata experiment/condition, unchanged; Dice
+denominator > 0, finite in [0,1], equal to the formula; three methods x two conditions;
+development conditions only; DevelopmentScore and weaker-condition formulas; selected =
+max; CSV reproduces scores; no estimator/generator/morphology called).
+```
+
+#### Quantitative Results
+
+```text
+GT lesion voxels: 3,512.
+Method              pn0 pred / inter / Dice        pn3 pred / inter / Dice        DevScore
+EXP-024 Otsu        223,202 / 3,505 / 0.030920     257,444 / 3,494 / 0.026778     0.028849  rank 1
+EXP-022 manual       70,866 / 1,474 / 0.039635      42,046 /   342 / 0.015014     0.027325  rank 2
+EXP-023 iterative   848,576 / 3,512 / 0.008243     247,703 / 3,493 / 0.027809     0.018026  rank 3
+Weaker-condition Dice: 0.026778 (Otsu), 0.015014 (manual), 0.008243 (iterative).
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (later evaluation phases).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp025_thresholding_dice_comparison.png
+results/figures/exp025_t2_{pn0,pn3}_error_overlay.png (after scoring; k = 46, 91, 102,
+136; k = 102 a known GT diagnostic slice; does not influence selection)
+False positives dominated by hyperintense CSF-compatible structures (ventricles,
+cisterns, sulci, fissure) and bright rims; GT lesions mostly periventricular.
+```
+
+#### Comparison with Reference
+
+```text
+Otsu highest DevelopmentScore; margin over manual 0.0015; iterative last.
+```
+
+#### Interpretation
+
+```text
+All Dice < 0.04: a single global T2 threshold is dominated by non-lesion bright voxels.
+Otsu and iterative predictions contain almost all GT voxels but are 64-242x larger than
+the GT; the manual 3400 is compact but cuts into the lesion intensity range and loses
+most lesion voxels in pn3 (shift). Otsu is the most balanced across pn0/pn3.
+Incidental: EXP-023 pn0 contains all GT voxels, so the pn0 EXP-021 mask contains every
+lesion voxel (observed after freeze; not used to change the mask).
+```
+
+#### Decision
+
+```text
+SELECTED INITIAL THRESHOLDING METHOD: EXP-024 Otsu (graythresh on T2(brainMask), per
+volume), by the highest Phase-37 DevelopmentScore, no tolerance, no manual override.
+Development baseline, not the final pipeline. No threshold, method, mask or preprocessing
+changed after seeing Dice.
+```
+
+#### Next Experiment
+
+```text
+Phase 58 - multi-threshold evaluation (not started).
+```
+
+#### Notes
+
+```text
+Development results only (not test/generalization). No IoU/precision/recall/
+specificity/volume error/lesion-wise/slice-wise metrics. No held-out data.
 ```

@@ -378,6 +378,13 @@ $$
 - **T is intentionally unresolved at Phase 53.** Both its value and its estimation method are left to Phases 54–57 (manual global, iterative, Otsu, comparison). Any threshold rule must follow the Phase-37 protocol (one shared rule for `pn0` and `pn3`, never silently condition-specific).
 - **Known confound:** bright ventricular CSF lies inside `brainMask` (Section 9), so high T2 intensity is **not** equated with lesion. The baseline detects high-intensity candidates and is expected to include CSF false positives. These are not removed at the baseline stage.
 - Implementation: `src/segmentation/thresholdLesionCandidates.m` applies a **provided** T only (no estimation, no file access, no GT).
+- Phase 54 evaluated this baseline with one manually defined threshold (EXP-022, T_raw = 3400), only as an **experimental reference**. That value is not the selected lesion threshold; the threshold method is still open (Phases 55–57).
+- Phase 55 evaluated the course iterative threshold (EXP-023: T0 = mean of `T2(brainMask)`, partition `>=`/`<`, ε = 0.5/4095, same rule per condition) as a **candidate method**. Its data-derived thresholds are not project parameters, and no method has been selected yet (Phase 57).
+- Phase 56 evaluated MATLAB `graythresh` (Otsu) on `T2(brainMask)` per condition (EXP-024) as a further **candidate method**. Its thresholds are data-derived and not project parameters.
+- **Phase 57 (EXP-025) selected the INITIAL thresholding method: Otsu** (`graythresh` on `T2(brainMask)`, estimated per volume).
+  - It had the highest pre-defined Phase-37 DevelopmentScore, the full-volume 3D Dice averaged over `pn0` and `pn3` (0.028849, against 0.027325 for manual and 0.018026 for iterative), with no tie tolerance.
+  - This is the current **development baseline**, not the final segmentation pipeline. All Dice values are below 0.04, dominated by bright non-lesion structures.
+  - The manual and iterative methods remain documented alternatives.
 
 ---
 

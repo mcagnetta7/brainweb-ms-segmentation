@@ -204,4 +204,10 @@ function cfg = config()
     % Non definire questi valori prima della fase di progetto
     % corrispondente.
 
+    % Metodo di soglia INIZIALE scelto nella fase 57 (EXP-025, DevelopmentScore
+    % Dice su pn0+pn3): Otsu (graythresh) su T2(brainMask), stimato per ogni
+    % volume. È la baseline di sviluppo, NON la pipeline finale; nessun
+    % valore di soglia è fissato qui (la soglia è un'uscita dell'algoritmo).
+    cfg.segmentation.thresholdMethod = "otsu";
+
 end
