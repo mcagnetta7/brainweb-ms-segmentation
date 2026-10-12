@@ -570,6 +570,8 @@ Important constraints for this project:
 
 Region growing is optional and is not part of the initial baseline.
 
+Project-status note (Phase 73, 2026-10-12): allowed and course-supported, but not activated, because the project-specific justification (high-confidence lesion cores with incomplete extent) was not satisfied.
+
 ---
 
 ## 10. Edge Detection
@@ -598,6 +600,8 @@ Experiment-specific note: EXP-017 (Phase 50) combines course-supported Canny (EX
 Experiment-specific note (EXP-018, Phase 50; explicitly authorized by the user on 2026-10-06 after the independent-2D branch EXP-010..017 reached a strong limitation): slice-to-slice propagation of the brain-support mask. Every operation remains 2D and course-supported (`imerode`, `imdilate`, morphological gradient, `imimposemin`, `watershed`, `imfill`), but slice k uses the accepted mask of the adjacent slice k±1 to build its markers. The propagation scheme itself is not verified as a course technique; it is a project design decision. The same authorization covers EXP-019 (same scheme, asymmetric erosion/dilation radii) and EXP-020 (EXP-019 with watershed ridge pixels assigned to the foreground), requested by the user on 2026-10-06. This does NOT authorize 3D structuring elements, 3D filters, 3D connected components or other uses of inter-slice information.
 
 Experiment-specific exception (EXP-021, Phase 50; explicitly authorized by the user on 2026-10-06 as an exploratory test): 3D erosion and dilation with `strel('sphere', r)`, 3D connected components (`bwconncomp(..., 26)`) and selection of the largest 3D component on the T1 raw Otsu mask. This is a **volumetric extension of 2D techniques present in the course slides** (erosion, dilation, connected components, largest region, hole filling); volumetric processing itself is **not** treated in the course PDF (the course skull-removal exercise on `t1.nii` works on a single layer, and `bwconncomp` is presented with 2D connectivity). It is documented as exploration; it does not authorize 3D processing in any other pipeline stage.
+
+Experiment-specific note (EXP-039, Phase 72; explicitly approved by the user in the Phase-72 instructions on 2026-10-12): `bwconncomp(M_pred, 26)` on the complete predicted volume, used only to **represent** the existing foreground voxels as 3D candidate components (no voxel added or removed, no filtering, no `regionprops3`). This is a **project-specific volumetric extension** of the course-supported connected-component concept and `bwconncomp`; the verified course material demonstrates connected components in 2D, and 26-connectivity is **not** claimed to be taught there. It does not authorize 3D morphology, 3D filtering or `regionprops3`.
 
 ---
 
@@ -675,6 +679,8 @@ Watershed segmentation
 ```
 
 They require an explicit experimental justification before being incorporated into the final pipeline.
+
+Project-status note (Phase 80, EXP-041): the first multimodal experiment combines two already generated binary candidate masks with one deterministic logical intersection (`M_T2 AND M_PD`), as required by `PROJECT_SPEC.md` §15 (explicit, deterministic fusion rule). This is the same elementwise logical operation already used to restrict candidates to the brain mask. It introduces no new image-processing technique, no machine learning and no learned or weighted combination.
 
 ---
 

@@ -412,6 +412,19 @@ $$
 - **Phase 65 (EXP-032): selected development structuring element for standard opening = `strel('square', 3)`** (3×3 support, 9 elements, 2D slice-wise, one opening, shared by `pn0` and `pn3`).
   - It was chosen by DevelopmentScore (0.056845) among square3, diamond1, square5 and diamond2.
   - It is not globally frozen. The candidate generation (EXP-026) is unchanged, and no component rules are defined. The formal before/after comparison is Phase 66.
+- **Phase 66 (EXP-033): standard 2D opening with `strel('square', 3)` is RETAINED FOR SUBSEQUENT DEVELOPMENT.**
+  - Evidence: the development-set before/after comparison gives a DevelopmentScore of 0.041545 → 0.056845, better in both `pn0` and `pn3`. This is not independent validation.
+  - Current development pipeline: EXP-026 `candidateMask` → one 2D opening with square 3×3. The overall pipeline is not frozen.
+- **Phase 67 (EXP-034): object-analysis stage.** `bwconncomp` with 8-connectivity is applied to every axial slice of the retained Phase-65 morphology output (2D slice-wise components). No component filtering or property threshold is defined.
+- **Phase 68 (EXP-035):** the current 2D candidate components are characterized with the course-compatible `regionprops` properties Area, Centroid and BoundingBox. These properties are descriptive only; no filtering rule is defined.
+- **Phase 69 (EXP-036):** a conservative Area-9 component filter (remove whole 2D components with Area == 9) is provisionally retained, pending the Phase-70 small-lesion protection analysis. DevelopmentScore 0.056845 → 0.058101. It is not final.
+- **Phase 70 (EXP-037):** the Area-9 component filter improved development Dice but was **rejected**, because it caused the complete loss of previously represented 2D GT lesion components (3 in `pn0`, 4 in `pn3`). The retained development pipeline therefore remains **unfiltered after the Phase-65 opening**. No alternative threshold was introduced.
+- **Phase 71 (EXP-038): predicted mask representation.**
+  - The current development prediction is represented as `M_pred(x,y,z)`, a logical binary 181×217×181 volume (`data/processed/phase71_t2_{pn0,pn3}_predicted_volume.mat`).
+  - Processing up to `M_pred`: EXP-026 candidate generation, then the Phase-65 standard 2D opening with square 3×3, with no component filtering. `M_pred` is assembled from the 181 axial slices and is exactly identical to the Phase-65 masks.
+  - The pipeline is not frozen.
+- **Phase 72 (EXP-039):** the current development pipeline represents `M_pred` as 26-connected volumetric candidate components, for structural analysis and future lesion-level analysis (`bwconncomp(M_pred, 26)`, no voxel changed). This is a 3D extension of course-supported connected-component concepts, and 26-connectivity is not claimed to be taught in the course. The components are candidates, not confirmed lesions, and no component filtering is defined.
+- **Phase 78 (EXP-040):** in the individual-modality benchmark, T2 Class 3 is the best single-modality candidate (PD Class 3 0.016424, T1 Class 3 0.004280). The development pipeline is unchanged (§15).
 
 ---
 
@@ -509,6 +522,8 @@ Its contribution must be evaluated against the simpler segmentation method.
 
 If it does not provide a useful improvement, it should be excluded from the final pipeline.
 
+Development status (Phase 73): Phase 73 evaluated whether region growing is justified for the current pipeline. Although incomplete lesion extent is present, the current candidate mask does not provide a sufficiently specific high-confidence lesion-core seed set, because substantial bright false-positive and ambiguous structures remain (FP > TP; 3D candidate objects larger than the total GT lesion volume). Region growing is therefore **not activated**, and Phases 74–77 are skipped. It remains allowed in principle.
+
 ---
 
 ## 15. Multimodal Processing
@@ -528,6 +543,30 @@ Any fusion rule must be:
 - independent of final-test ground truth.
 
 Arbitrary logical combinations of modalities should be avoided unless experimentally justified.
+
+**Development status (Phase 78, EXP-040):** T1, T2 and PD were evaluated independently on development data (`pn0` + `pn3`).
+- Each used the same architecture: EXP-021 brain mask, `multithresh` with N = 2, Class 1/2/3 each alone, and a 2D square-3×3 opening.
+- **Best individual modality: T2, Class 3** (DevelopmentScore 0.056845, identical to the Phase-71 `M_pred`).
+- The other modalities, with Class 3 also best: PD 0.016424 (strongly condition-dependent, Dice 0.007287 / 0.025561) and T1 0.004280.
+- The lesion modality stays T2. No fusion has been performed. The question of whether PD or T1 can add information to T2 is left to the multimodal phases.
+
+**Phase-79 decision (modality combination):** based on the Phase-78 individual-modality development benchmark, T2 is kept as the primary modality and PD is selected as the secondary modality for the first controlled multimodal experiment.
+- **Why PD:** PD is not selected because it performs well alone; it has poor specificity and a very large FP burden. It is selected because, among the available secondary modalities, it gives the strongest evidence of potentially complementary lesion information: rank 2, and more TP than T1 in both conditions.
+- **T1:** not selected for the first pair, but not discarded.
+- **Fusion rule:** intentionally left undefined until Phase 80. No multimodal prediction exists yet, and whether T2 + PD improves on T2 alone is a Phase-81 question.
+
+**Phase-80 fusion rule (EXP-041):** Phase 80 defines the first controlled multimodal fusion as a binary decision-level intersection, `M_multimodal = M_T2 AND M_PD`, applied to the frozen Phase-78 Class-3 masks with the same rule for every condition.
+- **Roles:** T2 is kept as the anchor segmentation, and PD is used only as a confirmation gate.
+- **Consequence:** the fused mask is a subset of T2. It cannot recover voxels missed by T2.
+- **Pre-registration:** the rule was selected before any multimodal GT evaluation. OR was rejected a priori, and no alternative rule was tested.
+- **Structural effect:** T2 retained 99.96 % (`pn0`) / 92.06 % (`pn3`).
+- **No claim of improved performance** is made until Phase 81. The canonical prediction is still the Phase-71 T2 `M_pred`.
+
+**Phase-81 decision (EXP-042):** Phase 81 compared the predefined T2+PD intersection quantitatively against the retained T2 baseline, on full-volume Dice with the pre-registered DevelopmentScore rule.
+- **Result:** the fusion did not improve the DevelopmentScore (0.056472 vs 0.056845; Dice `pn0` +0.000022, `pn3` −0.000769), so it was **rejected**.
+- **Why:** it removed mostly FP (`pn3`: 5,149 FP, 177 TP), but not selectively enough to raise Dice.
+- **Retained pipeline:** the simpler T2-only pipeline, with the Phase-71 `M_pred` as canonical development prediction. EXP-041/042 are kept as negative evidence.
+- **Not done:** no alternative fusion rule was tested and nothing was retuned.
 
 ---
 

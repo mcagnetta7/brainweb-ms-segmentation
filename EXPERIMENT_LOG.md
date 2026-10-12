@@ -627,6 +627,16 @@ Maintain this table as experiments are completed.
 | EXP-030 | Standard opening probe, square 3×3, 2D (Phase 63) | Phase-60 candidateMask, pn0 + pn3, EXP-021 | One imopen on the frozen candidate mask | 0.0566 | 0.0570 | 0.056845 | n/a | n/a | IMPROVES baseline 0.041545 (+0.0153) with the provisional probe; not selected |
 | EXP-031 | Closing after the EXP-030 opening, square 3×3, 2D (Phase 64) | EXP-030 opened masks, pn0 + pn3, EXP-021 | One imclose on the opened mask (brain mask after complete closing) | 0.0561 | 0.0563 | 0.056181 | n/a | n/a | Below opening (−0.000665); EXP-030 remains best observed; not selected |
 | EXP-032 | Structuring-element selection for standard opening, 4 SE grid (Phase 65) | Phase-60 candidateMask, pn0 + pn3, EXP-021 | imopen with square3 / diamond1 / square5 / diamond2 | 0.0566 | 0.0570 | 0.056845 (square3) | n/a | n/a | SELECTED DEVELOPMENT SE: square3 (diamond1 0.053937, diamond2 0.051808, square5 0.037654) |
+| EXP-033 | Before / after morphology comparison (Phase 66) | Phase-60 vs Phase-65 frozen masks, pn0 + pn3 | None (evaluation of the selected opening square3) | 0.0404 → 0.0566 | 0.0427 → 0.0570 | 0.041545 → 0.056845 | n/a | n/a | MORPHOLOGY BLOCK RETAINED FOR SUBSEQUENT DEVELOPMENT (development-set comparison, not independent validation) |
+| EXP-034 | 2D connected components, 8-connectivity (Phase 67) | Phase-65 selected masks, pn0 + pn3 | bwconncomp per axial slice (identification only) | n/a | n/a | n/a | n/a | n/a | COMPONENTS IDENTIFIED: 1,210 / 1,068 slice-wise instances (not unique lesions); no filtering |
+| EXP-035 | 2D component properties: Area, Centroid, BoundingBox (Phase 68) | Phase-67 components, pn0 + pn3 | regionprops on the saved ccBySlice (description only) | n/a | n/a | n/a | n/a | n/a | PROPERTY TABLE ESTABLISHED: 1,210 / 1,068 rows; Area 9–1,332, median 18; no filtering |
+| EXP-036 | Conservative component-area filter: remove Area == 9 (Phase 69) | Phase-65/67/68 artifacts, pn0 + pn3 | Remove whole 2D components with Area 9 | 0.0581 | 0.0581 | 0.058101 | n/a | n/a | PROVISIONALLY RETAINED FOR PHASE 70 (+0.001256; removed TP 36 / 42) |
+| EXP-037 | Small-lesion protection audit of the Area-9 filter (Phase 70) | Phase-65 vs EXP-036 frozen masks, pn0 + pn3, GT 2D components | None (audit; 2D GT cross-sections, 8-connectivity) | 0.0581 | 0.0581 | 0.058101 | n/a | n/a | PROTECTION FAILED (3 / 4 cross-sections completely lost) → EXP-036 REJECTED; pipeline reverts to Phase-65 masks |
+| EXP-038 | Complete predicted-volume reconstruction M_pred (Phase 71) | Phase-65 retained masks, pn0 + pn3 | 181 axial slices assembled into M_pred (representation only) | n/a | n/a | n/a | n/a | n/a | REPRESENTATION ESTABLISHED: M_pred = Phase-65 source exactly (70,878 / 67,066 voxels) |
+| EXP-039 | 3D connected components of M_pred, 26-connectivity (Phase 72) | Phase-71 M_pred, pn0 + pn3 | bwconncomp(M_pred, 26), representation only (3D extension of a course concept) | n/a | n/a | n/a | n/a | n/a | 3D CANDIDATE COMPONENTS ESTABLISHED: 335 / 291 (not lesions); exact reconstruction |
+| EXP-040 | Individual-modality benchmark T1 / T2 / PD, Class 1/2/3 (Phase 78) | T1/T2/PD msles2 1mm rf0, pn0 + pn3, EXP-021 | Source modality and class; multithresh N = 2 + square3 opening for all | 0.0566 (T2) | 0.0570 (T2) | 0.056845 (T2 C3) | n/a | n/a | BEST INDIVIDUAL MODALITY: T2 Class 3 (PD C3 0.016424, T1 C3 0.004280); pipeline unchanged |
+| EXP-041 | T2 + PD intersection fusion (Phase 80) | Phase-78 T2 / PD Class-3 masks, pn0 + pn3 | Fusion M_T2 AND M_PD (one predefined rule, no GT) | not computed | not computed | n/a | n/a | n/a | FUSED PREDICTION GENERATED (T2 retained 99.96 % / 92.06 %); evaluation in Phase 81 |
+| EXP-042 | Mono T2 vs T2 AND PD comparison (Phase 81) | Phase-71 M_pred vs EXP-041, pn0 + pn3, GT label 10 | None (evaluation of the frozen fusion) | 0.0566 → 0.0567 | 0.0570 → 0.0563 | 0.056845 → 0.056472 | n/a | n/a | REJECT_MULTIMODAL_FUSION; T2-only retained (removed pn3: 5,149 FP / 177 TP) |
 
 Preprocessing experiments without segmentation use `n/a` for the segmentation metrics.
 
@@ -824,6 +834,43 @@ Roadmap integration milestones (not experiments):
 - EXP-032 (Phase 65, standard opening with 4 pre-registered SEs from the Phase-60 mask; one SE shared by pn0/pn3): **SELECTED DEVELOPMENT SE: square3** (0.056845).
   - diamond1 0.053937 (keeps more TP but many more FP), diamond2 0.051808, square5 0.037654 (loses about 72 % of TP).
   - The dense fluid-like regions persist with every SE. A development selection, not frozen; config.m is unchanged.
+- EXP-033 (Phase 66, before/after comparison of the frozen Phase-60 vs Phase-65 masks): **THE SELECTED MORPHOLOGY BLOCK IS RETAINED FOR SUBSEQUENT DEVELOPMENT** (DevelopmentScore 0.041545 → 0.056845, better in both conditions).
+  - It removes about 51 % of the FP (98.7 % of the removed voxels are FP), but FN rise by +928 / +939.
+  - The dense fluid-like FP remain. This is a development-set comparison, not independent validation; the pipeline is not frozen.
+- EXP-034 (Phase 67, bwconncomp with 8-connectivity on every axial slice of the Phase-65 masks; no GT, no properties, no filtering): **2D COMPONENTS IDENTIFIED**.
+  - 1,210 (`pn0`) / 1,068 (`pn3`) slice-wise component instances, at most 20–21 per slice, in slices 12–144 / 28–144.
+  - These are not unique lesions.
+- EXP-035 (Phase 68, regionprops Area/Centroid/BoundingBox on the saved Phase-67 components; no GT, no filtering): **PROPERTY TABLE ESTABLISHED**.
+  - 1,210 / 1,068 rows. Area is 9–1,332 / 9–1,328 with median 18 (strongly right-skewed); Area ≥ 9 follows from the square-3×3 opening.
+  - This is the descriptive basis for Phase 69.
+- EXP-036 (Phase 69, remove 2D components with Area == 9, keep Area > 9; Area only; masks frozen before GT): **PROVISIONALLY RETAINED FOR PHASE 70** (DevelopmentScore 0.056845 → 0.058101, better in both conditions).
+  - It removes 345 / 303 instances (about 4 % of the voxels, 98.5–98.8 % FP), but also 36 / 42 lesion voxels.
+  - It is not final; small-lesion protection is pending.
+- EXP-037 (Phase 70, 2D GT-component audit of EXP-036 vs Phase 65; no size threshold): **SMALL-LESION PROTECTION FAILED → EXP-036 REJECTED**.
+  - 3 (`pn0`) / 4 (`pn3`) GT cross-sections of 13–22 pixels, each represented only by one 3×3 square, lose all support.
+  - The retained development pipeline reverts to the Phase-65 opening masks, with no component filtering.
+- EXP-038 (Phase 71, assembly of the 181 axial slices of the retained Phase-65 prediction into the logical 181×217×181 volume M_pred): **REPRESENTATION ESTABLISHED**.
+  - M_pred is exactly identical to the source. No GT, no metrics, no components.
+- EXP-039 (Phase 72, `bwconncomp(M_pred, 26)` on the complete volume; a project-specific 3D extension of the course connected-component concept): **3D CANDIDATE COMPONENTS ESTABLISHED**.
+  - 335 / 291 components (from 1,210 / 1,068 2D instances), about 51 % single-slice. The largest component has 25,629 / 25,417 voxels.
+  - Exact reconstruction of `M_pred`. Not a lesion count.
+- Phase 73 (region-growing decision, no experiment ID): **DO_NOT_INTRODUCE_REGION_GROWING**.
+  - Incomplete extent is present, but the candidates are not high-confidence lesion cores (FP > TP; largest 3D candidate object > total GT lesion volume).
+  - Phases 74–77 are skipped. Pipeline unchanged.
+- EXP-040 (Phase 78, T1 / T2 / PD each alone, Class 1/2/3 of multithresh N = 2, square3 opening; 18 predictions frozen before GT): **BEST INDIVIDUAL MODALITY: T2 Class 3** (0.056845, identical to the Phase-71 M_pred).
+  - PD Class 3: 0.016424 (Dice 0.007287 / 0.025561, strongly condition-dependent); T1 Class 3: 0.004280. No exact tie.
+  - Pipeline unchanged; no fusion.
+- Phase 79 (multimodal combination selection, no experiment ID; pre-registered rule: rank 1 = primary, rank 2 = secondary if it also has more TP than rank 3 in both conditions): **SELECTED PAIR T2 + PD**.
+  - PD is chosen as the most justified potentially complementary source, not as a good standalone segmenter. T1 is not selected for the first pair but is not discarded.
+  - No fusion rule, no multimodal prediction, no multimodal Dice. The canonical Phase-71 `M_pred` is unchanged. EXP-041 is reserved for Phase 80.
+- EXP-041 (Phase 80, one predefined fusion rule `M_T2 AND M_PD` on the frozen Phase-78 masks; no GT): **FUSED DEVELOPMENT PREDICTION GENERATED**.
+  - It keeps 70,849 / 61,740 of 70,878 / 67,066 T2 voxels (99.96 % / 92.06 %). In `pn0` the fusion is almost the identity on T2.
+  - The large bright / fluid-like candidate structures are largely shared by T2 and PD and are therefore not removed (the declared risk; visual observation).
+  - No performance claim; evaluation in Phase 81. Phase-71 `M_pred` remains canonical.
+- EXP-042 (Phase 81, full-volume Dice of the frozen T2 and T2 AND PD predictions; pre-registered rule: candidate must have a strictly higher DevelopmentScore, exact tie → T2): **REJECT_MULTIMODAL_FUSION**.
+  - DevelopmentScore 0.056472 vs 0.056845 (Δ −0.000374). The Dice change is +0.000022 in `pn0` and −0.000769 in `pn3`.
+  - The fusion removed mostly FP (`pn3`: 5,149 FP, 177 TP), but the removed set is slightly richer in lesion voxels (3.32 %) than the Dice break-even (2.85 %).
+  - The T2-only pipeline (Phase-71 `M_pred`) is retained. The multimodal stage is complete.
 
 Code debugging, syntax fixes and checks that a MATLAB function works are not experiments and are not recorded in this log.
 
@@ -6753,4 +6800,1758 @@ Phase 66 - before/after morphology comparison (not started).
 
 ```text
 Development results only. No closing, reconstruction, components or held-out data.
+```
+
+---
+
+### EXP-033 — Phase-66 formal before / after morphology comparison
+
+#### Pre-registration (written before EXP-033 was run)
+
+```text
+Purpose: development-set before/after comparison of the selected morphology block (not
+independent validation: pn0/pn3 already selected the SE in Phase 65).
+BEFORE: Phase-60 canonical candidateMask (EXP-026). AFTER: Phase-65 selected masks (standard
+opening, strel('square',3), 2D slice-wise, EXP-032 winner, = EXP-030). Both frozen; nothing is
+regenerated; no morphology, components or thresholding is called.
+Metrics: full-volume Dice, DevelopmentScore, TP/FP/FN, removed TP/FP and fractions, slice profile.
+Decision rule (no tolerance): AfterDevelopmentScore > BeforeDevelopmentScore -> morphology block
+RETAINED FOR SUBSEQUENT DEVELOPMENT; < -> not retained in its current form; = -> no measurable
+improvement. Retained does not mean the pipeline is frozen.
+```
+
+#### Status
+
+```text
+COMPLETED - THE SELECTED MORPHOLOGY BLOCK IS RETAINED FOR SUBSEQUENT DEVELOPMENT
+```
+
+#### Date
+
+```text
+2026-10-11
+```
+
+#### Objective
+
+```text
+Formal development-set before/after comparison of the selected morphology block (standard
+2D opening, strel('square',3)) against the unchanged Phase-60 candidate mask.
+```
+
+#### Hypothesis
+
+```text
+None (comparison of two frozen artifacts; pre-registered retention rule).
+```
+
+#### Baseline / Reference
+
+```text
+BEFORE: data/processed/phase60_t2_{pn0,pn3}_candidate_mask.mat (EXP-026).
+AFTER: data/processed/phase65_t2_{pn0,pn3}_selected_opening_candidate.mat (EXP-032 winner,
+identical to EXP-030).
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development (already used for the Phase-65 selection: not independent validation).
+GT label 10, evaluation only.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+The two frozen mask sets above; T2 only for display.
+```
+
+#### Processing Pipeline
+
+```text
+load frozen masks -> integrity / identity checks -> GT -> full-volume Dice, DevelopmentScore,
+TP/FP/FN, removed TP/FP, slice profiles, figures. No mask generated or saved.
+```
+
+#### Changed Component
+
+```text
+None (evaluation only).
+```
+
+#### Parameters
+
+```text
+None new. Morphology under evaluation: one 2D imopen with strel('square',3).
+```
+
+#### Implementation
+
+```text
+experiments/exp033_before_after_morphology_comparison.m
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-11. All 48 checks PASS: frozen inputs and metadata (Phase 60 / EXP-026;
+Phase 65 / EXP-032, square3, 3x3, 9 elements, 2D, not frozen), AFTER = EXP-032 winner = EXP-030,
+AFTER subset of BEFORE (no added voxel), Dice reproduce EXP-026 / EXP-032 / EXP-030, count
+algebra, slice totals, masks / GT / config.m unchanged, no morphology / components /
+thresholding / save call.
+```
+
+#### Quantitative Results
+
+```text
+                        pn0                          pn3
+BEFORE voxels; TP/FP/FN 146,729; 3,035/143,694/477   134,794; 2,952/131,842/560
+AFTER  voxels; TP/FP/FN  70,878; 2,107/68,771/1,405   67,066; 2,013/65,053/1,499
+Dice before -> after    0.040402 -> 0.056647 (+0.016246)   0.042688 -> 0.057043 (+0.014355)
+Removed (TP / FP)       75,851 (928 / 74,923)        67,728 (939 / 66,789)
+Candidates removed      51.7 %                       50.2 %
+TP preserved / lost     69.4 % / 30.6 %              68.2 % / 31.8 %
+FP removed              52.1 %                       50.7 %
+Removed that is FP      98.8 %                       98.6 %
+FP removed per TP lost  80.7                         71.1
+FN increase             +928                         +939
+Weaker-condition Dice 0.040402 -> 0.056647; DevelopmentScore 0.041545 -> 0.056845 (+0.0153005).
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed.
+```
+
+#### Visual Results
+
+```text
+results/figures/exp033_before_after_masks_{pn0,pn3}.png, exp033_before_after_errors_{pn0,pn3}.png,
+exp033_removed_by_morphology_{pn0,pn3}.png, exp033_before_after_slice_profile_{pn0,pn3}.png
+Isolated and thin FP, including the cortical/sulcal/fissural rims, are largely removed; the FP
+reduction is proportionally largest in the inferior and superior slices, where thin rims
+dominate. The central slices (about k = 70-100) keep high FP: the ventricle/cistern-compatible
+regions remain. Small/thin lesions and lesion borders are lost (FN rise across the lesion-bearing
+slices, most around k = 95-105). The lesion-to-fluid contacts remain. pn0 and pn3 behave alike.
+```
+
+#### Comparison with Reference
+
+```text
+AFTER beats BEFORE in both conditions.
+```
+
+#### Interpretation
+
+```text
+A. The morphology block improves the development metric in both conditions: it removes about
+half of the FP (98.7 % of the removed voxels are FP, about 71-81 FP per TP lost).
+B. It does not solve the dominant dense fluid-like FP (68,771 / 65,053 FP remain, about 20x the
+GT), it loses small/thin lesions (FN +928 / +939) and lesion-to-fluid contacts persist.
+Development-set comparison only (pn0/pn3 also selected the SE), not independent validation.
+```
+
+#### Decision
+
+```text
+THE SELECTED MORPHOLOGY BLOCK IMPROVES THE DEVELOPMENT-SET RESULT AND IS RETAINED FOR
+SUBSEQUENT DEVELOPMENT PHASES: standard 2D opening, strel('square',3), one application, on the
+T2 Phase-60 candidate mask. Not a frozen pipeline; config.m unchanged; EXP-026 unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 67 - 2D connected-component analysis (not started).
+```
+
+#### Notes
+
+```text
+No new mask, morphology, components, thresholding or held-out data.
+```
+
+---
+
+### EXP-034 — Phase-67 2D connected-component identification
+
+#### Status
+
+```text
+COMPLETED - 2D COMPONENTS IDENTIFIED (no filtering, no properties, no GT)
+```
+
+#### Date
+
+```text
+2026-10-11
+```
+
+#### Objective
+
+```text
+Decompose the retained Phase-65 candidate masks into independent 2D connected components on
+every axial slice, as the object representation for Phase 68.
+```
+
+#### Hypothesis
+
+```text
+None (structural identification).
+```
+
+#### Baseline / Reference
+
+```text
+Input: data/processed/phase65_t2_{pn0,pn3}_selected_opening_candidate.mat (EXP-026 candidates +
+standard 2D opening square3, retained in Phase 66).
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development. GT not loaded.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Phase-65 selected masks (unchanged).
+```
+
+#### Processing Pipeline
+
+```text
+for each axial slice k: CC = bwconncomp(candidateMask(:,:,k), 8) -> ccBySlice{k};
+numComponentsPerSlice(k) = CC.NumObjects. No mask is modified.
+```
+
+#### Changed Component
+
+```text
+None (object identification only).
+```
+
+#### Parameters
+
+```text
+Connectivity 8 (2D), fixed a priori without GT: consistent with the 2D 8-neighbourhood used since
+Phase 61; diagonally touching pixels belong to the same in-plane region. No 4 vs 8 comparison.
+```
+
+#### Implementation
+
+```text
+src/segmentation/extractConnectedComponents2D.m (bwconncomp on single 2D slices; 4 or 8 explicit)
+experiments/connected_components_2d_check.m (synthetic, 14/14 ok)
+experiments/exp034_connected_components_2d.m
+Outputs: data/processed/phase67_t2_{pn0,pn3}_components2d.mat (ccBySlice, numComponentsPerSlice, metadata)
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-11. The first two runs stopped only at the final self-check "bwconncomp receives
+single 2D slices only": the script's own forbidden-pattern strings contained the literal text
+being searched for. The strings were split and the script rerun unchanged otherwise; all 27
+checks PASS (provenance, 181 CC structures per condition with connectivity 8 and ImageSize
+181x217, exact reconstruction of every slice from PixelIdxList, disjoint components covering all
+candidate pixels, saved structures reload identically, masks / config.m unchanged, no GT /
+regionprops / filtering / morphology / thresholding / 3D components).
+```
+
+#### Quantitative Results
+
+```text
+                                 pn0      pn3
+Slices analysed                  181      181
+Slices with / without components 121 / 60 117 / 64
+First / last slice with components 12 / 144  28 / 144
+Total 2D component instances     1,210    1,068
+Components per slice min / max   0 / 20   0 / 21
+Mean / median per slice (all 181) 6.6851 / 5   5.9006 / 5
+pn0 has components at k = 12-13 and 25-26 separated by empty slices 14-24 and 27; pn3 is
+contiguous from 28 to 144.
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (no GT, no matching).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp034_components2d_{pn0,pn3}.png (k = 46, 91, 102, 136; label colours display only)
+results/figures/exp034_component_count_by_slice.png
+At k = 91 the ventricle-compatible region appears as several separate 2D components (its parts
+are disconnected in-plane), next to small compact components.
+```
+
+#### Comparison with Reference
+
+```text
+Not applicable.
+```
+
+#### Interpretation
+
+```text
+The component-count profile is similar in pn0 and pn3 (most components around k = 50-105, up to
+about 20 per slice). total2DComponents counts slice-wise component instances and is NOT the number
+of unique MS lesions: a structure spanning several slices is counted once per slice, and one
+in-plane structure may be split into several components.
+```
+
+#### Decision
+
+```text
+2D COMPONENTS IDENTIFIED; saved for Phase 68. No filtering, no properties, no GT, no 3D
+connectivity; config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 68 - component properties (not started).
+```
+
+#### Notes
+
+```text
+Development data only; no held-out data.
+```
+
+---
+
+### EXP-035 — Phase-68 2D component property extraction
+
+#### Status
+
+```text
+COMPLETED - PROPERTY TABLE ESTABLISHED (no filtering decision)
+```
+
+#### Date
+
+```text
+2026-10-11
+```
+
+#### Objective
+
+```text
+Describe every Phase-67 2D component instance with the course-supported regionprops properties
+Area, Centroid and BoundingBox.
+```
+
+#### Hypothesis
+
+```text
+None (descriptive).
+```
+
+#### Baseline / Reference
+
+```text
+Input: data/processed/phase67_t2_{pn0,pn3}_components2d.mat (ccBySlice, EXP-034, 8-connectivity,
+2D axial slice-wise) on the Phase-65 selected opening masks (EXP-026 + opening square3).
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development. GT not used.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Saved Phase-67 component structures (not recomputed); Phase-65 masks for checks and figures only.
+```
+
+#### Processing Pipeline
+
+```text
+for each slice: regionprops(ccBySlice{k}, 'Area', 'Centroid', 'BoundingBox') -> one row per
+component (order of PixelIdxList preserved); independent validation against PixelIdxList.
+```
+
+#### Changed Component
+
+```text
+None (description only; masks and components unchanged).
+```
+
+#### Parameters
+
+```text
+Properties: Area, Centroid, BoundingBox only. MATLAB conventions kept: Centroid = [x column,
+y row]; BoundingBox = [x, y, width, height] with origin at the outer pixel edge (min - 0.5).
+```
+
+#### Implementation
+
+```text
+src/segmentation/extractComponentProperties2D.m
+experiments/component_properties_2d_check.m (synthetic, 15/15 ok)
+experiments/exp035_component_properties.m
+Outputs: data/processed/phase68_t2_{pn0,pn3}_component_properties.mat (componentTable, metadata)
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-11. All 44 checks PASS: provenance, 181 CC structures, rows = EXP-034 totals and
+per-slice NumObjects, indices 1..NumObjects in PixelIdxList order, Area = numel(PixelIdxList),
+Centroid = mean column/row, BoundingBox = min/max -0.5 (tolerance 1e-12), values inside the image,
+per-slice Area sums = Phase-67 candidateVoxels, total Area = nnz(Phase-65 mask), inputs unchanged,
+regionprops only in the function with exactly 3 properties, no GT / CC recomputation / filtering /
+morphology / thresholding / 3D / intensity.
+```
+
+#### Quantitative Results
+
+```text
+                              pn0                 pn3
+Rows (2D component instances) 1,210               1,068
+Total Area (= candidate voxels) 70,878            67,066
+Area min / max                9 / 1,332           9 / 1,328
+Area mean / median / std      58.58 / 18 / 122.05 62.80 / 18 / 128.70
+Instances with Area = 9 *    345 (28.5 %)        303 (28.4 %)
+Centroid X (column) range     33 - 191.91         28 - 191
+Centroid Y (row) range        26 - 155            28.5 - 155
+BoundingBox width range       3 - 74              3 - 73
+BoundingBox height range      3 - 56              3 - 56
+* counted afterwards from results/metrics/exp035_component_properties.csv (areaPixels == 9);
+  not computed by the script.
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (no GT, no matching).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp035_component_area_rank.png (sorted Area, log scale, no threshold)
+results/figures/exp035_component_properties_{pn0,pn3}.png (k = 46, 91, 102, 136; display transposed)
+```
+
+#### Comparison with Reference
+
+```text
+Not applicable.
+```
+
+#### Interpretation
+
+```text
+The Area distribution is strongly right-skewed: about 28 % of the instances have the minimum
+Area 9 and half have at most 18 pixels (median), while a few instances reach about 1,330 pixels
+(the large compact regions visible in the central slices). Area >= 9 and width/height >= 3 follow
+from the square-3x3 opening (every surviving pixel lies in a 3x3 square inside the component);
+this is a consequence of the morphology, not a filter; the distribution is conditioned by the
+opening, so 9 or 18 are not natural thresholds for Phase 69. pn0 and pn3 have very similar ranges.
+Rows are 2D slice-wise instances, not unique 3D lesions.
+```
+
+#### Decision
+
+```text
+PROPERTY TABLE ESTABLISHED. No filtering, classification or threshold. The Phase-68 property table
+provides the descriptive basis for the Phase-69 false-positive filtering analysis.
+```
+
+#### Next Experiment
+
+```text
+Phase 69 - false-positive filtering analysis (not started).
+```
+
+#### Notes
+
+```text
+Development data only; no held-out data; config.m unchanged.
+```
+
+---
+
+### EXP-036 — Phase-69 conservative component-area filtering probe
+
+#### Pre-registration (written before EXP-036 was run and before any EXP-036 GT evaluation)
+
+```text
+Question: does removing only the minimum-area post-opening 2D component class (Area = 9 pixels)
+reduce false positives enough to improve the development score?
+Motivation (GT-free, Phase 68): minimum Area = 9 in both pn0 and pn3; the square-3x3 opening shapes
+the size distribution; removing only the minimum class is the weakest non-trivial area rule.
+Geometric note (GT-free): after a square-3x3 opening every component contains a full 3x3 square, so
+an Area-9 component is exactly one 3x3 square (a structure that survived the erosion as a single
+pixel). Checked in the script.
+Rule: remove Area == 9, keep Area > 9; whole components only, from the saved Phase-67 PixelIdxList
+and Phase-68 areaPixels (no bwconncomp / regionprops recomputation). Same rule for pn0 and pn3.
+Precondition: min(areaPixels) == 9 in both conditions, otherwise TECHNICALLY BLOCKED (no change of
+the threshold).
+Properties used: Area only. Centroid, BoundingBox, intensity, slice index: NOT USED. Connectivity 8,
+2D axial slice-wise. No threshold sweep, no second rule.
+Order: both filtered masks saved before GT is loaded.
+Evaluation: full-volume Dice, DevelopmentScore; no near-tie tolerance.
+Decision: filtered > unfiltered -> PROVISIONALLY RETAINED FOR PHASE 70 (small-lesion protection);
+< -> REJECTED; = -> not retained. Area-9 instances are not assumed to be noise.
+```
+
+#### Status
+
+```text
+COMPLETED - EXP-036 AREA-9 FILTER PROVISIONALLY RETAINED FOR PHASE 70 ANALYSIS
+```
+
+#### Date
+
+```text
+2026-10-11
+```
+
+#### Objective
+
+```text
+Test one pre-registered conservative component filter: remove the minimum-area (Area = 9) 2D
+component instances of the Phase-65 mask, keep Area > 9.
+```
+
+#### Hypothesis
+
+```text
+None beyond the pre-registered question; Area-9 instances were not assumed to be noise.
+```
+
+#### Baseline / Reference
+
+```text
+Unfiltered Phase-65 mask (= Phase-66 retained morphology): DevelopmentScore 0.0568453350591327.
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development; GT label 10 loaded only after both filtered masks were saved.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Phase-65 masks, Phase-67 ccBySlice (EXP-034), Phase-68 componentTable (EXP-035).
+```
+
+#### Processing Pipeline
+
+```text
+check min Area == 9 -> keep whole components with areaPixels > 9 (Phase-67 PixelIdxList) ->
+save 2 masks -> GT -> full-volume Dice, DevelopmentScore, removed TP/FP.
+```
+
+#### Changed Component
+
+```text
+Component filter added after the retained opening (Area only).
+```
+
+#### Parameters
+
+```text
+Remove Area == 9 / keep Area > 9; Area only; connectivity 8, 2D; same rule for pn0 and pn3.
+```
+
+#### Implementation
+
+```text
+src/segmentation/filterComponentsByArea2D.m
+experiments/component_area_filter_check.m (synthetic, 16/16 ok)
+experiments/exp036_conservative_area_filter.m
+Outputs: data/processed/exp036_t2_{pn0,pn3}_area9_filtered_candidate.mat
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-11. All 52 checks PASS: provenance, Phase-68 rows map to PixelIdxList,
+min Area == 9 in both conditions, removed components all Area 9 and exact 3x3 squares, retained
+all > 9, removed voxels = 9 x removed components, filtered subset of source, masks saved before
+GT, TP/FP/FN algebra, unfiltered Dice = Phase 65/66, inputs and config.m unchanged, no
+recomputation / centroid / box / intensity / morphology / threshold.
+```
+
+#### Quantitative Results
+
+```text
+                                 pn0                     pn3
+Components before / removed / kept 1,210 / 345 / 865      1,068 / 303 / 765
+Fraction of components removed   28.5 %                  28.4 %
+Candidate voxels before / removed / after 70,878 / 3,105 / 67,773   67,066 / 2,727 / 64,339
+Fraction of voxels removed       4.4 %                   4.1 %
+Unfiltered TP / FP / FN          2,107 / 68,771 / 1,405  2,013 / 65,053 / 1,499
+Filtered TP / FP / FN            2,071 / 65,702 / 1,441  1,971 / 62,368 / 1,541
+Removed TP / FP                  36 / 3,069              42 / 2,685
+Removed voxels that are FP       98.8 %                  98.5 %
+FP removed per TP lost           85.25                   63.93
+Dice before -> after             0.056647 -> 0.058105    0.057043 -> 0.058098
+Weaker-condition Dice 0.056647 -> 0.058098; DevelopmentScore 0.056845 -> 0.058101 (+0.0012560).
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (no component-to-lesion matching).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp036_area9_filter_{pn0,pn3}.png, exp036_area9_removed_errors_{pn0,pn3}.png,
+exp036_area9_filter_by_slice.png. The removed instances are isolated 3x3 squares scattered in the
+parenchyma and along sulcal/cortical bright structures; almost all removed voxels are non-lesion
+at the fixed slices. The large fluid-like regions are untouched.
+```
+
+#### Comparison with Reference
+
+```text
+Improvement in both conditions (pn0 +0.001457, pn3 +0.001055).
+```
+
+#### Interpretation
+
+```text
+Removing about 28 % of the 2D component instances (about 4 % of the candidate voxels) removes
+almost only FP, so Dice rises slightly in both conditions. The cost is real: 36 / 42 GT lesion voxels
+contained in minimum-size (9-pixel) 2D candidate components are removed (FN +36 / +42); whether
+these components are whole small lesions, 2D sections of lesions continuing on other slices or
+peripheral fragments is not yet determined (no component-to-lesion matching). The dominant dense
+fluid-like FP are unaffected: if retained, the filter only refines the candidate mask. The gain is small and must be weighed against small-lesion
+protection in Phase 70.
+```
+
+#### Decision
+
+```text
+EXP-036 AREA-9 FILTER = PROVISIONALLY RETAINED FOR PHASE 70 ANALYSIS (DevelopmentScore 0.058101 >
+0.056845, no tolerance). Not final; not a frozen parameter; config.m unchanged. No other threshold
+tested.
+```
+
+#### Next Experiment
+
+```text
+Phase 70 - small-lesion protection (not started).
+```
+
+#### Notes
+
+```text
+Area-9 instances were not assumed to be noise before GT; no component-level lesion matching; no
+held-out data.
+```
+
+---
+
+### EXP-037 — Phase-70 small-lesion protection audit
+
+#### Pre-registration (written before EXP-037 was run)
+
+```text
+Input predictions (frozen, not regenerated): BEFORE = Phase-65 opening masks; AFTER = EXP-036
+Area-9 filtered masks. Filter rule already fixed in Phase 69. New segmentation parameters: NONE.
+GT: evaluation only. GT components: 2D axial, bwconncomp 8-connectivity, evaluation code only
+(src/evaluation). Small-lesion area threshold: NONE (GT Area reported as a continuous variable).
+Primary protection constraint: zero GT 2D components with overlapBefore > 0 and overlapAfter == 0
+("newly completely lost") in BOTH pn0 and pn3.
+Decision: A) no reproduced strict DevelopmentScore improvement -> REJECT; B) improvement but
+newly completely lost > 0 in pn0 or pn3 -> REJECT (pipeline reverts to Phase-65 masks, no
+component filtering); C) improvement and zero complete losses in both -> RETAIN for subsequent
+development. No partial-loss threshold, no rescue rule, no larger area threshold, no spatial
+exception, no hybrid mask. A 2D GT component is not a unique 3D lesion; this is not the final
+lesion-level evaluation.
+```
+
+#### Status
+
+```text
+COMPLETED - SMALL-LESION PROTECTION FAILED -> EXP-036 AREA-9 FILTER REJECTED
+```
+
+#### Date
+
+```text
+2026-10-11
+```
+
+#### Objective
+
+```text
+Audit whether the provisional EXP-036 Area-9 filter removes all predicted support of any 2D GT
+lesion component that was represented before filtering.
+```
+
+#### Hypothesis
+
+```text
+None (pre-registered protection constraint).
+```
+
+#### Baseline / Reference
+
+```text
+BEFORE: Phase-65 opening masks; AFTER: EXP-036 Area-9 filtered masks (both frozen).
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development; GT label 10, evaluation only; 2D GT components with 8-connectivity.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+data/processed/phase65_t2_{pn0,pn3}_selected_opening_candidate.mat;
+data/processed/exp036_t2_{pn0,pn3}_area9_filtered_candidate.mat; GT.
+```
+
+#### Processing Pipeline
+
+```text
+verify provenance and AFTER subset of BEFORE -> GT -> bwconncomp(gt slice, 8) per axial slice
+(evaluation only) -> per GT component overlap before/after -> categories, area statistics ->
+reproduce EXP-036 Dice / DevelopmentScore -> pre-registered decision. No mask generated or saved.
+```
+
+#### Changed Component
+
+```text
+None (audit only).
+```
+
+#### Parameters
+
+```text
+None new. GT connectivity 8 (project convention). No lesion-size threshold.
+```
+
+#### Implementation
+
+```text
+src/evaluation/auditSmallLesionProtection2D.m
+experiments/small_lesion_protection_2d_check.m (synthetic, 16/16 ok; first run stopped on a test
+volume that MATLAB treats as 2D (false(5,5,1)); fixed to 2 slices)
+experiments/exp037_small_lesion_protection.m
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-11. All 38 checks PASS: provenance, AFTER subset of BEFORE, one row per GT 2D
+component (areas sum to GT voxels), overlap formulas, category E = 0, categories cover all
+components, sums of overlaps = TP before / after, removed overlap = removedTP = EXP-036 (36 / 42),
+Dice and DevelopmentScores reproduce EXP-036, masks / GT / config.m unchanged, no new prediction /
+filter / component / morphology / threshold / save.
+```
+
+#### Quantitative Results
+
+```text
+                                         pn0                 pn3
+GT 2D component instances                328                 328
+  GT Area min / median / mean / max      1 / 5 / 10.71 / 90  (same GT)
+With non-zero overlap before / after     126 / 123           120 / 116
+Affected by the filter                   4                   5
+Partially reduced (still represented)    1 (Area 43)         1 (Area 43)
+NEWLY COMPLETELY LOST                    3                   4
+  GT Area of lost components             13, 14, 22          13, 13, 17, 20
+  (overlap before 7-9 voxels, i.e. one 3x3 square; slices pn0 88, 105, 113; pn3 94, 104, 105, 107)
+TP before / after / removed              2,107 / 2,071 / 36  2,013 / 1,971 / 42
+Fraction of before TP retained           98.3 %              97.9 %
+Dice before -> after                     0.056647 -> 0.058105  0.057043 -> 0.058098
+DevelopmentScore 0.056845 -> 0.058101 (+0.001256), reproduced.
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (this 2D audit is not the final lesion-level protocol).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp037_gt_area_vs_coverage_change_{pn0,pn3}.png, exp037_affected_gt_area_rank.png,
+exp037_fixed_slice_audit_{pn0,pn3}.png. None of the complete losses falls on the fixed slices
+(46, 91, 102, 136); they are documented in the audit table, no slice was added post hoc.
+```
+
+#### Comparison with Reference
+
+```text
+Development improved, protection constraint failed in both conditions.
+```
+
+#### Interpretation
+
+```text
+The filter's Dice gain comes partly at the cost of removing the only predicted support of 3 (pn0)
+/ 4 (pn3) GT lesion cross-sections of 13-22 pixels, each represented only by a single 3x3
+candidate square. Descriptively, the most severe damage falls on relatively small GT
+2D components: the completely lost ones have Area 13-22 (pn0) / 13-20 (pn3) pixels, while the
+affected components overall reach 43 pixels (no formal small-lesion threshold implied). Only about 38 % of GT 2D components (126 / 120 of
+328, median Area 5 overall) had any support before filtering: small cross-sections are already
+largely missed by the candidate mask and the opening.
+```
+
+#### Decision
+
+```text
+REJECT_AREA9_FILTER (case B: development improved but small-lesion protection failed: 3 / 4 newly
+completely lost GT 2D components). EXP-036 is rejected for the core development pipeline; the
+retained development pipeline reverts globally to the Phase-65 opening masks with NO component
+filtering. No alternative threshold, rescue rule or spatial exception; config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 71 - complete predicted-volume reconstruction (not started).
+```
+
+#### Notes
+
+```text
+A 2D GT component is a lesion cross-section, not a unique 3D lesion; GT Area was not used to create
+or modify the filter. No held-out data.
+```
+
+---
+
+### EXP-038 — Phase-71 complete predicted-volume reconstruction
+
+#### Status
+
+```text
+COMPLETED - REPRESENTATION ESTABLISHED (M_pred = Phase-65 retained prediction, exact identity)
+```
+
+#### Date
+
+```text
+2026-10-12
+```
+
+#### Objective
+
+```text
+Assemble the retained slice-wise prediction into the complete logical 3D volume M_pred(x,y,z).
+```
+
+#### Hypothesis
+
+```text
+None (representation / integrity stage).
+```
+
+#### Baseline / Reference
+
+```text
+Retained source: data/processed/phase65_t2_{pn0,pn3}_selected_opening_candidate.mat (EXP-026
+candidates + standard 2D opening square3, no component filtering). EXP-036 (Area-9 filter) was
+rejected by EXP-037 / Phase 70 and is not used.
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development. GT not used.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Phase-65 masks; results/metrics/exp037_phase70_decision.csv (REJECT_AREA9_FILTER verified).
+```
+
+#### Processing Pipeline
+
+```text
+verify Phase-70 decision -> split the source into 181 axial logical slice masks ->
+assemblePredictedVolume (cat along dimension 3, order preserved) -> M_pred -> exact identity checks
+-> save. No segmentation operation.
+```
+
+#### Changed Component
+
+```text
+None (representation only).
+```
+
+#### Parameters
+
+```text
+None.
+```
+
+#### Implementation
+
+```text
+src/segmentation/assemblePredictedVolume.m
+experiments/predicted_volume_assembly_check.m (synthetic, 12/12 ok)
+experiments/exp038_reconstruct_predicted_volume.m
+Outputs: data/processed/phase71_t2_{pn0,pn3}_predicted_volume.mat (M_pred, metadata)
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-12. All 33 checks PASS: Phase-70 decision reproduced, source provenance, source not
+EXP-036, 181 logical 181x217 slices, M_pred logical 181x217x181 and exactly equal to the source
+(volume and every slice, order preserved, voxel counts equal, xor empty), empty / non-empty slices
+preserved, saved M_pred reloads with Phase 71 / EXP-038 metadata, masks and config.m unchanged,
+no GT / metric / components / filter / morphology / threshold.
+```
+
+#### Quantitative Results
+
+```text
+                         pn0          pn3
+M_pred size / class      181x217x181 logical   181x217x181 logical
+Predicted voxels         70,878       67,066
+Non-empty / empty slices 121 / 60     117 / 64
+First / last non-empty   12 / 144     28 / 144
+Exact identity           true         true
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed.
+```
+
+#### Visual Results
+
+```text
+results/figures/exp038_predicted_volume_identity_{pn0,pn3}.png (k = 1, 46, 91, 136, 181: source,
+M_pred, empty xor difference).
+```
+
+#### Comparison with Reference
+
+```text
+Identical to the Phase-65 source; voxel-level performance therefore equals Phase 65 (not recomputed).
+```
+
+#### Interpretation
+
+```text
+Phase 71 did not create a new 3D segmentation: it formalized the existing prediction as M_pred,
+rebuilt explicitly from the slices with voxel-by-voxel identity; the 2D -> 3D step adds no
+information. M_pred is the canonical complete-volume representation of the current development pipeline:
+EXP-026 candidate generation + Phase-65 standard 2D opening square3 + no component filtering.
+```
+
+#### Decision
+
+```text
+REPRESENTATION ESTABLISHED. No segmentation decision; pipeline not frozen; config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 72 - 3D connected-component analysis (not started).
+```
+
+#### Notes
+
+```text
+No GT, no metrics, no 2D/3D connected components, no held-out data.
+```
+
+---
+
+### EXP-039 — Phase-72 3D connected-component analysis
+
+#### Status
+
+```text
+COMPLETED - 3D CANDIDATE COMPONENTS ESTABLISHED (structural representation; M_pred unchanged)
+```
+
+#### Date
+
+```text
+2026-10-12
+```
+
+#### Objective
+
+```text
+Represent the canonical Phase-71 M_pred as 26-connected 3D candidate components (objects that may
+extend across axial slices), without modifying any prediction voxel.
+```
+
+#### Hypothesis
+
+```text
+None (structural analysis).
+```
+
+#### Baseline / Reference
+
+```text
+Input: data/processed/phase71_t2_{pn0,pn3}_predicted_volume.mat (EXP-026 + Phase-65 standard 2D
+opening square3, no component filtering; EXP-036 rejected in Phase 70).
+```
+
+#### Dataset Configuration
+
+```text
+pn0 + pn3 development. GT not used.
+```
+
+#### Development or Test Data
+
+```text
+DEVELOPMENT
+```
+
+#### Input
+
+```text
+Phase-71 M_pred; Phase-67 2D component totals (descriptive comparison only).
+```
+
+#### Processing Pipeline
+
+```text
+CC3D = bwconncomp(M_pred, 26) once per complete volume -> minimal descriptors from PixelIdxList +
+ind2sub (voxelCount, first/last slice, sliceSpan, occupiedSliceCount) -> exact reconstruction check.
+```
+
+#### Changed Component
+
+```text
+None (representation only).
+```
+
+#### Parameters
+
+```text
+Connectivity 26, fixed before analysis without GT: full-neighbourhood volumetric analogue of the 2D
+8-connectivity used since Phase 61/67; isotropic 1 mm voxels; keeps candidates that continue
+diagonally between slices connected. No 6/18/26 comparison.
+Course classification: volumetric extension of course-supported connected-component analysis and
+bwconncomp; the verified course material demonstrates connected components in 2D and 26-connectivity
+is not claimed to be taught there (ALLOWED_TECHNIQUES section 10, EXP-039 note).
+```
+
+#### Implementation
+
+```text
+src/segmentation/extractConnectedComponents3D.m
+experiments/connected_components_3d_check.m (synthetic, 18/18 ok)
+experiments/exp039_connected_components_3d.m
+Outputs: data/processed/phase72_t2_{pn0,pn3}_components3d.mat (CC3D, componentTable, metadata)
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-12. All 38 checks PASS (rerun with the added check occupiedSliceCount == sliceSpan,
+no z gaps, for every component; identical results): provenance (Phase 71 / EXP-038, EXP-026 + square3, no
+filtering, EXP-036 rejected), one bwconncomp call per complete volume with connectivity 26 and
+ImageSize 181x217x181, non-empty valid disjoint PixelIdxList, exact reconstruction of M_pred, voxel
+sum = nnz(M_pred), consistent slice descriptors, M_pred / config.m unchanged, saved artifacts
+reload identically, no GT / regionprops3 / filter / morphology / threshold / metric.
+```
+
+#### Quantitative Results
+
+```text
+                                   pn0                      pn3
+Predicted voxels                   70,878                   67,066
+Phase-67 2D component instances    1,210                    1,068
+3D candidate components (26-conn.) 335                      291
+Single-slice / multi-slice         170 / 165 (50.7 / 49.3 %)  148 / 143 (50.9 / 49.1 %)
+Voxel count min / median / mean / max   9 / 21 / 211.58 / 25,629   9 / 21 / 230.47 / 25,417
+Occupied slices min / median / mean / max  1 / 1 / 2.73 / 70   1 / 1 / 2.71 / 40
+Largest sliceSpan                  70                       40
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed (no GT, no matching).
+```
+
+#### Visual Results
+
+```text
+results/figures/exp039_components3d_{pn0,pn3}.png (maximum-label orthogonal projections),
+exp039_components3d_slices_{pn0,pn3}.png (k = 46, 91, 102, 136), exp039_component3d_voxelcount_rank.png,
+exp039_component3d_slice_span_rank.png. The few largest components are extended structures in the
+central slices (visually compatible with the ventricular system and midline/fissural fluid-like
+regions); many small compact components are scattered through the parenchyma.
+```
+
+#### Comparison with Reference
+
+```text
+Volumetric connectivity groups the 1,210 / 1,068 slice-wise 2D instances into 335 / 291 3D candidate
+components (3.61 / 3.67 2D instances per 3D component).
+```
+
+#### Interpretation
+
+```text
+About half of the 3D candidate components occupy a single slice; very large multi-slice
+components are present (largest 25,629 / 25,417 voxels vs. median 21), consistent with the
+persistent bright fluid-like structures of earlier phases (qualitative visual observation, not an
+algorithmic anatomical identification). The reported
+3D components are predicted candidate objects; their count must not be interpreted as the number of
+confirmed MS lesions.
+```
+
+#### Decision
+
+```text
+3D CANDIDATE COMPONENTS ESTABLISHED. No component removed; M_pred unchanged; no GT; config.m
+unchanged. Not a lesion count.
+```
+
+#### Next Experiment
+
+```text
+Phase 73 - region-growing decision (not started).
+```
+
+#### Notes
+
+```text
+Development data only; no held-out data; no regionprops3.
+```
+
+---
+
+### Phase 73 — Region-growing applicability decision (decision entry, no experiment ID)
+
+```text
+Date: 2026-10-12.
+Question: should region growing be introduced into the current lesion-segmentation pipeline?
+Course compatibility: YES (seeds, similarity predicate Q, connectivity to the seeds, stop when no
+neighbour satisfies the predicate; intensity-difference similarity).
+Roadmap prerequisite: thresholding must provide high-confidence lesion cores while underestimating
+their spatial extent. FN alone are not sufficient.
+Script: experiments/phase73_region_growing_decision.m (reads saved CSVs / metadata only; no image
+processing, GT, seeds, growth, prediction or save; 9/9 checks PASS).
+Evidence (retained pipeline, EXP-033 after morphology + EXP-039):
+  pn0: candidates 70,878; TP 2,107 / FP 68,771 / FN 1,405 (GT 3,512); 335 3D candidate components,
+       largest 25,629 voxels, max 70 occupied slices.
+  pn3: candidates 67,066; TP 2,013 / FP 65,053 / FN 1,499; 291 components, largest 25,417, max 40.
+  Phase 70: small-lesion protection failed for the Area-9 filter (EXP-037).
+Indicators: extent limitation observed (FN > 0) = true; FP burden (FP > TP) = true; large ambiguous
+candidates (largest 3D candidate object > total GT lesion volume) = true; small-lesion concern = true.
+Core reliability: FAIL. Prerequisite satisfied: false.
+Dominant limitation: very large FP burden and persistent bright fluid-like ambiguous candidate
+structures; growth from these non-specific seeds would risk enlarging false positives.
+DECISION: DO_NOT_INTRODUCE_REGION_GROWING. Phases 74-77: SKIPPED BY PHASE-73 DECISION (not executed).
+No new algorithm, parameter or prediction; no GT-derived seed; no held-out data; M_pred and
+config.m unchanged. Region growing remains allowed and course-supported, not activated here.
+Outputs: results/metrics/phase73_region_growing_evidence.csv, phase73_region_growing_decision.csv.
+```
+
+---
+
+### EXP-040 — Phase-78 individual-modality segmentation benchmark
+
+#### Pre-registration (written before EXP-040 was run and before any EXP-040 GT evaluation)
+
+```text
+Development data: msles2 1 mm rf0, pn0 + pn3 only. PD pn3 downloaded on 2026-10-12 for this
+experiment (official BrainWeb; SHA-256 8c2ce715...3bb2d61; little-endian 0...4095); config.m gained
+only its data path (cfg.dataset.noisyMriFiles.pn3.PD). Held-out data not downloaded.
+Modalities: T1 / T2 / PD, each alone. Same architecture for all:
+  brain support EXP-021 (same mask for T1/T2/PD within a condition); uint16 -> double -> /4095;
+  preprocessing NONE; multithresh(volume(brainMask), 2) -> imquantize -> 3 classes;
+  predeclared candidates: Class 1 only, Class 2 only, Class 3 only (no combinations, no other N);
+  one 2D axial standard opening strel('square',3), then AND brainMask; no component filtering, no
+  region growing, no multimodal fusion.
+All 3 x 3 x 2 = 18 predictions saved before GT is loaded. Integrity: T2 Class 3 must equal the
+Phase-71 M_pred exactly (pn0, pn3), otherwise TECHNICALLY BLOCKED.
+Phase-41 GT intensity statistics are known from earlier phases but are NOT used: all three classes are
+generated symmetrically for every modality, and only development Dice selects among them.
+Evaluation: GT label 10, not intersected with brainMask; full-volume Dice; DevelopmentScore =
+(pn0 + pn3)/2; weakerConditionDice = min. No near-tie tolerance; exact tie -> higher weaker-condition
+Dice; a remaining exact tie is reported as unresolved. Best class selected within each modality, then
+modalities ranked by their selected DevelopmentScore. No fusion, no Phase 79-81 work.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Date
+
+```text
+2026-10-12
+```
+
+#### Objective
+
+```text
+Compare T1, T2 and PD as individual lesion-candidate sources under one identical architecture, and
+check whether T2 (provisional modality since Phase 41) is the best single modality on development
+data.
+```
+
+#### Hypothesis
+
+```text
+None numerical. Open question: is T2 Class 3 the best single-modality candidate, or does another
+modality/class give a higher DevelopmentScore under the same pipeline?
+```
+
+#### Baseline / Reference
+
+```text
+Retained pipeline: Phase-71 M_pred (T2, EXP-026 multithresh N = 2 Class 3, square3 opening, no
+component filtering), DevelopmentScore 0.056845 (EXP-033).
+```
+
+#### Dataset Configuration
+
+```text
+msles2, 1 mm, rf0, T1 / T2 / PD, pn0 + pn3 (PD pn3 added in this phase). GT: phantom_1.0mm_msles2_crisp,
+label 10 (3,512 voxels).
+```
+
+#### Development or Test Data
+
+```text
+Development only (pn0 + pn3). Held-out pn1/pn5/pn7/pn9 not downloaded or referenced.
+```
+
+#### Input
+
+```text
+data/raw/msles2/mri/{t1,t2,pd}_ai_msles2_1mm_{pn0,pn3}_rf0.raws; EXP-021 brain masks;
+Phase-71 M_pred (integrity reference only).
+```
+
+#### Processing Pipeline
+
+```text
+Per modality and condition: /4095 -> multithresh(volume(brainMask), 2) -> imquantize -> Class c AND
+brainMask (c = 1, 2, 3) -> per-slice imopen strel('square',3) -> AND brainMask.
+```
+
+#### Changed Component
+
+```text
+Lesion-candidate source modality (T1 / T2 / PD) and candidate class (1 / 2 / 3).
+```
+
+#### Parameters
+
+```text
+All fixed before the run (N = 2, square3, EXP-021). Thresholds are algorithm outputs per volume.
+```
+
+#### Implementation
+
+```text
+experiments/exp040_individual_modality_benchmark.m (no new src function).
+Outputs: data/processed/exp040_{t1,t2,pd}_{pn0,pn3}_class{1,2,3}_opened_candidate.mat (18 frozen
+predictions); data/processed/phase78_{t1,t2,pd}_{pn0,pn3}_selected_single_modality.mat (exact
+copies of each modality's selected class).
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-12. All 90 checks PASS: 6 MRI files present; masks / M_pred valid; per volume:
+finite [0,1] volume, multithresh on brain voxels only, two increasing thresholds, classes 1-3
+partition the brain mask, raw candidates inside the brain and opened candidates subsets of them,
+raw MRI unchanged; 18 predictions saved before GT; T2 Class 3 = Phase-71 M_pred exactly (pn0 and
+pn3); Dice in [0,1] on the full volume; DevelopmentScore = exact mean; aliases = frozen winners;
+GT / masks / M_pred / config.m unchanged; no held-out reference; no filtering / components /
+region growing / preprocessing call.
+Cosmetic fix after the run (no effect on numbers): the selection markers in
+exp040_single_modality_candidate_scores.png were listed in the legend as "data1-3"; the script now
+hides them from the legend (the saved PNG shows the old legend until a rerun).
+```
+
+#### Quantitative Results
+
+```text
+Thresholds (raw-equivalent, t1 / t2):
+  T1 pn0 1394.40 / 2005.27   T1 pn3 1294.58 / 1868.49
+  T2 pn0 2194.60 / 2956.67   T2 pn3 1993.98 / 2696.31
+  PD pn0 3291.89 / 3542.71   PD pn3 3020.06 / 3290.15
+
+Modality Class  Cond  Voxels    TP     FP        FN     Dice
+T1       1      pn0      70,777     3    70,774  3,509  0.000081
+T1       1      pn3      67,433     7    67,426  3,505  0.000197
+T1       2      pn0     732,163   988   731,175  2,524  0.002686
+T1       2      pn3     702,752   585   702,167  2,927  0.001657
+T1       3      pn0     651,125 1,540   649,585  1,972  0.004705
+T1       3      pn3     635,646 1,232   634,414  2,280  0.003855
+T2       1      pn0     660,499     0   660,499  3,512  0
+T2       1      pn3     614,133     0   614,133  3,512  0
+T2       2      pn0     715,184   175   715,009  3,337  0.000487
+T2       2      pn3     590,061   154   589,907  3,358  0.000519
+T2       3      pn0      70,878 2,107    68,771  1,405  0.056647
+T2       3      pn3      67,066 2,013    65,053  1,499  0.057043
+PD       1      pn0     515,881     0   515,881  3,512  0
+PD       1      pn3     389,518     1   389,517  3,511  0.000005
+PD       2      pn0      56,402     0    56,402  3,512  0
+PD       2      pn3      21,965     8    21,957  3,504  0.000628
+PD       3      pn0     788,306 2,885   785,421    627  0.007287
+PD       3      pn3     163,225 2,131   161,094  1,381  0.025561
+
+Selected class per modality (DevelopmentScore / weaker-condition Dice), no exact tie:
+  T2 Class 3  0.056845 / 0.056647   rank 1
+  PD Class 3  0.016424 / 0.007287   rank 2
+  T1 Class 3  0.004280 / 0.003855   rank 3
+```
+
+#### Lesion-Level Results
+
+```text
+Not computed.
+```
+
+#### Visual Results
+
+```text
+results/figures/exp040_single_modality_candidate_scores.png, exp040_selected_modality_dice.png,
+exp040_selected_modalities_{pn0,pn3}.png (k = 46, 91, 102, 136; TP yellow, FP red, FN green).
+Qualitative observation only: T1 Class 3 covers most of the bright white-matter region; PD Class 3
+in pn0 covers broad cortical/grey-matter-like regions plus the large bright / fluid-like central
+structures, while in pn3 it is a sparse scattering of small blocks plus those structures; T2 Class
+3 is the known Phase-71 candidate (bright / fluid-like regions plus periventricular candidates).
+Visual observation, no anatomical identification.
+```
+
+#### Comparison with Reference
+
+```text
+T2 Class 3 reproduces the retained pipeline exactly (0.056845). The next-best single modality, PD
+Class 3, has DevelopmentScore 0.016424 and weaker-condition Dice 0.007287; T1 Class 3 0.004280.
+```
+
+#### Interpretation
+
+```text
+Data: PD Class 3 has the most TP of any candidate (2,885 in pn0, FN 627), but with 785,421 FP; its
+candidate size differs strongly between conditions (788,306 vs 163,225 voxels, ratio 4.83 computed
+afterwards from the CSV), so its Dice differs by condition (0.007287 vs 0.025561). T1 never gives
+a compact candidate: Classes 2 and 3 cover 635,646-732,163 voxels.
+Classes 1-2: very low performance. The highest Dice among them is 0.002686 (T1 Class 2, pn0), with
+988 TP but 731,175 FP; for T2 and PD, Classes 1-2 keep very little lesion signal after the opening
+(at most 175 TP, T2 Class 2; PD Class 2 at most 8). More TP is not a better segmentation when it
+comes with hundreds of thousands of FP.
+Interpretation (not tested): in this architecture only T2 places the lesions in a small high-
+intensity top class (well supported by the results). PD Class 3 is strongly sensitive to the
+pn0/pn3 condition (size and Dice); no causal explanation is claimed. PD Class 3 intercepts more GT
+lesion voxels than any other candidate in both conditions but is not specific on its own; how much
+of this signal is complementary to T2 is not yet known. With this 3-class multithresh partition, T1 does not
+produce a class specific enough for the lesions.
+Scope: single-modality candidates under this one architecture (multithresh N = 2, single class,
+square3 opening). It does not say whether PD or T1 can add information to T2 in a fusion.
+```
+
+#### Decision
+
+```text
+BEST INDIVIDUAL MODALITY (development): T2, Class 3. The retained pipeline (Phase-71 M_pred) is
+confirmed unchanged. config.m was updated before the run only to record the PD pn3 file path; no
+segmentation, threshold, morphology or selection parameter was modified (modality stays T2). No
+fusion.
+```
+
+#### Next Experiment
+
+```text
+Phase 79 (multimodal) - not started.
+```
+
+#### Notes
+
+```text
+Development data only. PD pn3 download documented in DOWNLOAD_INFO.txt and
+docs/BRAINWEB_DATASET_NOTES.md section 13.53. Phase-41 GT statistics not used.
+```
+
+---
+
+### Phase 79 — Multimodal combination selection (decision entry, no experiment ID)
+
+#### Decision rule (written before the Phase-79 script was run)
+
+```text
+Date: 2026-10-12. Question: which second modality should be paired with T2 for the first controlled
+multimodal experiment (Phase 80 defines HOW, Phase 81 tests WHETHER it helps)?
+Evidence: only the saved EXP-040 / Phase-78 CSVs (no MRI, no GT, no new mask, no fusion, no
+multimodal Dice). EXP-041 is kept free for the Phase-80 fusion experiment.
+Rule:
+  primary   = the modality with individual rank 1 (expected T2);
+  secondary = the modality with individual rank 2, PROVIDED it also has more TP than the remaining
+              candidate in BOTH pn0 and pn3 (supporting evidence of retained lesion signal);
+  if the two indicators disagree -> no automatic choice, user decision required.
+No new score, weight or optimization metric. Complementarity is NOT established by this rule: the
+TP counts do not say whether the secondary modality's TP are voxels missed by T2 (that would need
+mask overlap, i.e. fusion, which is out of scope here).
+```
+
+#### Result
+
+```text
+Script: experiments/phase79_select_modality_combination.m (reads the EXP-040 CSVs; loads the T2
+Class 3 / M_pred masks only for an identity check; no MRI, GT, threshold, morphology, fusion or
+save of masks). 24/24 checks PASS (ranking reproduced from the per-class CSV, no tie, T2 Class 3 =
+M_pred, no AND/OR/XOR between masks, no multimodal Dice, M_pred unchanged, config.m without fusion
+fields and with unchanged segmentation parameters, no held-out reference).
+                 rank  class  DevScore  Dice pn0 / pn3       TP pn0 / pn3   FP pn0 / pn3
+  T2 (primary)    1     3     0.056845  0.056647 / 0.057043  2,107 / 2,013   68,771 / 65,053
+  PD (secondary)  2     3     0.016424  0.007287 / 0.025561  2,885 / 2,131  785,421 / 161,094
+  T1 (not sel.)   3     3     0.004280  0.004705 / 0.003855  1,540 / 1,232  649,585 / 634,414
+TP-support condition: PD > T1 in pn0 (2,885 > 1,540) and pn3 (2,131 > 1,232) -> satisfied.
+DECISION: SELECTED PAIR T2 + PD (T2 primary/anchor, PD secondary). PD is selected as the most
+justified source of potentially complementary information, NOT as a good standalone segmenter
+(poor specificity, very large FP burden, large pn0/pn3 variation). T1 not selected for the first
+pair; not discarded from the project.
+Fusion rule: NOT DEFINED (Phase 80). Multimodal prediction: NOT GENERATED. Multimodal Dice: NOT
+COMPUTED. It is not shown that T2 + PD is better than T2 alone (Phase 81). Canonical prediction:
+Phase-71 T2 M_pred, unchanged. config.m unchanged in this phase. EXP-041 kept free for Phase 80.
+Outputs: results/metrics/phase79_modality_combination_decision.csv,
+phase79_selected_combination.csv.
+```
+
+---
+
+### EXP-041 — Phase-80 T2 + PD intersection fusion
+
+#### Pre-registration (written before EXP-041 was run; no GT in this experiment)
+
+```text
+Selected pair (Phase 79): T2 + PD. Primary/anchor: T2. Secondary: PD.
+Inputs: the frozen Phase-78 selected single-modality masks (T2 Class 3, PD Class 3; EXP-021,
+/4095, no preprocessing, multithresh N = 2, square3 opening, no component filtering) - no MRI is
+reloaded and no thresholding or opening is rerun. T2 inputs must equal Phase-71 M_pred exactly.
+Fusion rule (ONE, same for pn0 and pn3, fixed before any multimodal evaluation):
+  binary decision-level intersection   fusedCandidateMask = M_T2 AND M_PD.
+No morphology, component filtering or region growing after the fusion.
+Rationale:
+  - T2 is the strongest single modality (Phase 78) and stays the anchor;
+  - the dominant limitation of the T2 prediction is its very large candidate foreground;
+  - PD Class 3 is much broader than T2 and unsuitable as an additive source: T2 OR PD would only
+    add foreground, so OR is rejected a priori, without testing;
+  - PD is therefore used only as a confirmation gate: a voxel survives only if both modalities
+    mark it.
+Consequence: the fused mask is a subset of T2. It can remove T2 candidates but can NEVER add a
+voxel missed by T2 (it cannot recover T2 false negatives). It may also remove T2 voxels that are
+lesion voxels; whether the trade-off helps is decided only in Phase 81.
+Declared risk (from the Phase-78 qualitative figures, before this run): PD Class 3 also contains
+the ventricles in both conditions, like T2 Class 3, so the intersection may keep much of the large
+fluid-like T2 candidate regions. This is recorded now so that it cannot be used afterwards to
+change the rule.
+Alternative fusion rules tested: NONE (no OR, XOR, AND NOT, voting, weights).
+GT: NOT USED. Outputs: structural mask-overlap statistics only (T2 / PD / fused / T2-only /
+PD-only voxels and fractions). These are not performance metrics; T2 candidates not confirmed by PD
+are not called false positives. Evaluation: DEFERRED TO PHASE 81. The fused mask is experimental:
+Phase-71 M_pred stays canonical; config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED (generation only; evaluation in Phase 81)
+```
+
+#### Implementation
+
+```text
+src/segmentation/fuseCandidateMasksIntersection.m (logical 3D inputs of equal size; returns
+primaryMask & secondaryMask)
+experiments/multimodal_fusion_intersection_check.m (synthetic, 14/14 PASS)
+experiments/exp041_t2_pd_intersection_fusion.m
+Outputs: data/processed/exp041_t2_pd_{pn0,pn3}_intersection_candidate.mat (fusedCandidateMask,
+metadata); results/metrics/exp041_t2_pd_fusion_summary.csv;
+results/figures/exp041_t2_pd_fusion_{pn0,pn3}.png (no GT).
+```
+
+#### Git Version
+
+```text
+Commit: 64cd8e0
+Working tree clean: NO
+```
+
+#### Execution
+
+```text
+MATLAB, 2026-10-12. 38/38 checks PASS: Phase-79 decision as expected; 4 Phase-78 inputs present,
+logical 181x217x181, provenance EXP-040 Class 3 / EXP-021 / /4095 / multithresh 2 / square3 / no
+filtering; T2 = Phase-71 M_pred (pn0, pn3); one fusion call, same rule for both conditions; fused =
+T2 AND PD exactly, subset of T2 and of PD; structural counts consistent; sources and M_pred
+unchanged; outputs reload identically; no GT / MRI / threshold / morphology / components / region
+growing / performance metric / alternative rule / held-out reference; config.m unchanged.
+```
+
+#### Quantitative Results (structural mask overlap only, no GT)
+
+```text
+                                 pn0         pn3
+T2 voxels                        70,878      67,066
+PD voxels                        788,306     163,225
+Fused (T2 AND PD) voxels         70,849      61,740
+T2-only (not confirmed by PD)    29          5,326
+PD-only                          717,457     101,485
+Fraction of T2 retained          0.999591    0.920586
+Fraction of T2 removed           0.000409    0.079414
+Fraction of PD overlapping T2    0.089875    0.378251
+Non-empty slices T2 / fused      121 / 121 (k 12-144)   117 (k 28-144) / 116 (k 28-144)
+```
+
+#### Visual Results
+
+```text
+results/figures/exp041_t2_pd_fusion_{pn0,pn3}.png (k = 46, 91, 102, 136; agreement map cyan = T2
+only, magenta = PD only, white = both; modality agreement, not TP/FP/FN).
+Qualitative observation only: in pn0 PD Class 3 covers essentially every T2 candidate, so the
+fused mask looks identical to T2. In pn3 the T2 candidates not confirmed by PD are mostly thin
+rims along the borders of T2 candidates and some small isolated spots. In both conditions the
+large candidate structures already described qualitatively as bright / fluid-like are largely
+shared by T2 and PD and are therefore not removed by the intersection (the risk declared in the
+pre-registration; visual observation, no anatomical identification).
+```
+
+#### Interpretation
+
+```text
+Structurally, the intersection acts very differently in the two conditions with one identical
+rule: in pn0 it is almost the identity on T2 (29 voxels removed); in pn3 it removes 7.9 % of the
+T2 candidates. Whether the removed voxels are lesion or non-lesion voxels is unknown without GT.
+Expectation stated before Phase 81 (not a result): the pn0 Dice can change only marginally; any
+difference between T2 and T2 AND PD will come mainly from pn3.
+```
+
+#### Decision
+
+```text
+FUSED DEVELOPMENT PREDICTION GENERATED AND FROZEN. No performance claim. The rule is not changed
+after inspection. Phase-71 M_pred remains canonical; multimodal pipeline not accepted yet.
+```
+
+#### Next Experiment
+
+```text
+Phase 81 - T2 alone vs T2 AND PD (EXP-041) development comparison.
+```
+
+---
+
+### EXP-042 — Phase-81 mono-modal T2 vs T2+PD multimodal comparison
+
+#### Pre-registration (written before EXP-042 was run and before any GT evaluation of EXP-041)
+
+```text
+Baseline (MONO): Phase-71 T2 M_pred (phase71_t2_{pn0,pn3}_predicted_volume.mat), frozen.
+Candidate (MULTI): EXP-041 T2 AND PD (exp041_t2_pd_{pn0,pn3}_intersection_candidate.mat), frozen
+in Phase 80 without GT. Neither method is regenerated or modified.
+GT: labels == 10 of the crisp phantom, complete 181x217x181 volume, not intersected with any mask;
+loaded only after all provenance / integrity checks.
+Primary metric: full-volume Dice = 2 TP / (predicted + GT). DevelopmentScore = (Dice_pn0 +
+Dice_pn3)/2; weakerConditionDice = min (reported). Diagnostics: TP / FP / FN per method and
+condition; removed-voxel analysis removedByFusion = M_T2 AND NOT M_multi -> removedTP / removedFP
+(evaluation only). No TN, IoU, precision, recall, specificity or volume error (later phases).
+Decision rule (DevelopmentScore only, no tolerance):
+  candidate score >  baseline score -> RETAIN_MULTIMODAL_FUSION
+  candidate score <  baseline score -> REJECT_MULTIMODAL_FUSION
+  exact tie                         -> REJECT_MULTIMODAL_FUSION (simpler T2 retained)
+No requirement to win both conditions; no secondary score.
+Qualitative expectation (not a result): pn0 can change only minimally (the masks differ by 29
+voxels); pn3 may change more (5,326 T2 voxels removed). Whether the removed voxels are mostly TP
+or FP is unknown, so the direction of the change is not assumed.
+No rule modification, no alternative fusion, no thresholding / morphology / filtering / region
+growing, no held-out data, config.m unchanged. If MULTI wins, exact-copy aliases
+phase81_{pn0,pn3}_retained_prediction.mat are written (finalPipelineFrozen = false); if it loses or
+ties, Phase-71 M_pred stays canonical and EXP-041 is kept as negative evidence.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+experiments/exp042_mono_vs_multimodal_comparison.m. MATLAB, 2026-10-12. 38/38 checks PASS:
+provenance of EXP-041 and Phase-71 / Phase-78 identity verified before GT; fused subset of T2;
+Phase-80 structural counts reproduced; GT = label 10 on the complete volume; TP + FN = 3,512 for
+all four predictions; removed = removedTP + removedFP; multi TP / FP / FN identities hold in pn0
+and pn3; DevelopmentScore exact means; decision from DevelopmentScore only; sources / GT / config.m
+unchanged; no regeneration, alternative fusion, threshold, morphology, filtering, region growing,
+later-phase metric or held-out reference. No alias written (candidate lost).
+Cosmetic fix after the run (no effect on numbers): the subtitle of exp042_removed_voxels_*.png was
+clipped on the left; it is now split over two lines (saved PNGs show the old subtitle until a rerun).
+Outputs: results/metrics/exp042_mono_vs_multimodal_metrics.csv, exp042_mono_vs_multimodal_summary.csv,
+exp042_fusion_removed_voxels.csv, phase81_multimodal_decision.csv; results/figures/
+exp042_dice_comparison.png, exp042_removed_voxels_{pn0,pn3}.png.
+```
+
+#### Quantitative Results
+
+```text
+Method  Cond  Predicted  TP     FP      FN     Dice
+T2      pn0   70,878     2,107  68,771  1,405  0.056647
+T2      pn3   67,066     2,013  65,053  1,499  0.057043
+T2+PD   pn0   70,849     2,107  68,742  1,405  0.056669
+T2+PD   pn3   61,740     1,836  59,904  1,676  0.056274
+(GT 3,512 voxels)
+
+Removed by fusion   pn0: 29 (TP 0, FP 29)    pn3: 5,326 (TP 177 = 3.32 %, FP 5,149 = 96.68 %)
+
+                 Dice pn0   Dice pn3   weaker     DevelopmentScore
+T2               0.056647   0.057043   0.056647   0.056845
+T2 AND PD        0.056669   0.056274   0.056274   0.056472
+Delta            +0.000022  -0.000769             -0.000374  (LOWER)
+```
+
+#### Interpretation
+
+```text
+In both conditions the fusion removed far more FP than TP (pn0 29 / 0; pn3 5,149 / 177). In pn0
+this gives a tiny Dice gain (+0.000022). In pn3 it does not improve Dice: removing a set of r
+voxels containing t TP raises Dice only if t / r < TP / (predicted + GT) of the current mask
+(algebraic consequence of Dice = 2TP / (P + G), derived afterwards from the saved counts). For T2
+pn3 that bound is 2,013 / 70,578 = 0.0285, while the removed set has 177 / 5,326 = 0.0332: the
+removed voxels are slightly richer in lesion voxels than the T2 mask as a whole, so PD
+confirmation is not lesion-selective enough. The large bright / fluid-like candidates that dominate
+the FP are kept by the intersection (Phase 80), so the FP burden stays about 60,000-69,000 voxels.
+```
+
+#### Decision
+
+```text
+REJECT_MULTIMODAL_FUSION (candidate DevelopmentScore 0.056472 < baseline 0.056845; predefined rule,
+no tolerance). T2 AND PD removes many false candidates (especially pn3) but is not selective enough:
+it also removes enough lesion signal to cancel the FP-reduction benefit. This rejects this specific
+rule only; it is not a reason to try OR / weights / other combinations now (EXP-041 stays negative
+evidence, not something to adjust). The retained development pipeline stays T2-only; Phase-71 M_pred remains the
+canonical development prediction. EXP-041 / EXP-042 artifacts kept as negative evidence. No
+alternative fusion tested, no post-hoc retuning, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 82 - formal voxel-wise confusion matrix (not started).
 ```

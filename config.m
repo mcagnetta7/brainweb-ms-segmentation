@@ -134,6 +134,11 @@ function cfg = config()
     cfg.dataset.noisyMriFiles.pn3.T1 = fullfile( ...
         cfg.dataset.rawDir, 'mri', 't1_ai_msles2_1mm_pn3_rf0.raws');
 
+    % PD pn3: scaricato nella fase 78 (EXP-040, confronto delle singole
+    % modalità). Solo percorso del dato, nessun parametro della pipeline.
+    cfg.dataset.noisyMriFiles.pn3.PD = fullfile( ...
+        cfg.dataset.rawDir, 'mri', 'pd_ai_msles2_1mm_pn3_rf0.raws');
+
     cfg.dataset.groundTruthFile = fullfile( ...
         cfg.dataset.rawDir, 'ground_truth', 'phantom_1.0mm_msles2_crisp.rawb');
 
