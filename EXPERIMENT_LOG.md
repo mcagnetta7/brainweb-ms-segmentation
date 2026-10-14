@@ -651,7 +651,8 @@ Maintain this table as experiments are completed.
 | EXP-054 | Lesion-wise 3D analysis, 26-connectivity, any-overlap rule (Phase 93) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (object-level diagnostic) | n/a | n/a | n/a | n/a | n/a | 59 GT lesions: detected 15 / 14, missed 44 / 45; false components 331 / 287; one merged object holds ~88 % of TP |
 | EXP-055 | Small-vs-large GT lesion analysis, median split 7 voxels (Phase 94) | EXP-054 status + GT component sizes | None (size-stratified diagnostic) | n/a | n/a | n/a | n/a | n/a | SMALL detected 3/31, 2/31; LARGE 12/28 both; size explains failure PARTLY |
 | EXP-056 | Development-only tuning, 24-configuration grid P x T x M x G (Phase 95) | T2 pn0 + pn3, GT label 10 after all predictions | Gaussian / multithresh N / opening / single-slice 3D component removal | 0.058067 | 0.058248 | 0.058158 | 0.030520 / 0.030695 | 0.59596 / 0.56919 | SELECTED P0_T2_M2_G1 (+0.00131 vs baseline); superseded by EXP-057 |
-| EXP-057 | Final development experiment: T1-derived anatomical support, 36-configuration grid S x T x M x G (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Support S0/S1/S2 / T2 threshold TA/TB inside support / opening / single-slice 3D component removal | 0.661039 | 0.539029 | 0.600034 | 0.664366 / 0.439418 | 0.657745 / 0.697039 | SELECTED S2_TA_M2_G1 (+0.5419 vs EXP-056 winner); not yet frozen |
+| EXP-057 | Final development experiment: T1-derived anatomical support, 36-configuration grid S x T x M x G (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Support S0/S1/S2 / T2 threshold TA/TB inside support / opening / single-slice 3D component removal | 0.661039 | 0.539029 | 0.600034 | 0.664366 / 0.439418 | 0.657745 / 0.697039 | SELECTED S2_TA_M2_G1 (+0.5419 vs EXP-056 winner); frozen as v1 (tag v1-frozen) |
+| EXP-058 | v2 under amendment A1: noise filter (Gaussian / anisotropic on T1 / T2) x extent recovery (morphological reconstruction), 21 configurations (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Filter F0-F6 / recovery R0-R2 on the frozen v1 | 0.669340 | 0.653000 | 0.661169 | 0.69969 / 0.71193 | 0.64151 / 0.60308 | SELECTED F5_R0 (anisotropic T2, +0.0611 vs v1) = v2 PRIMARY, v1 secondary; R1/R2 rejected; not yet frozen |
 
 Preprocessing experiments without segmentation use `n/a` for the segmentation metrics.
 
@@ -938,7 +939,14 @@ Roadmap integration milestones (not experiments):
   - T2 multithresh (N = 2, highest class) re-estimated inside S2 = EXP-021 AND filled T1-high AND NOT T1-low; square-3 opening; single-slice 3D component removal.
   - Dice 0.661039 / 0.539029, DevelopmentScore 0.600034 vs 0.058158. FP 66,484 → 1,167 / 63,126 → 3,123.
   - GT lesions detected 19 / 28 of 59. S2 contains 3114 / 3058 of the 3512 GT voxels (Recall ceiling).
-  - pn3 has 2.7× the FP of pn0: noise sensitivity is the main declared risk. Not yet frozen; next Phase 96.
+  - pn3 has 2.7× the FP of pn0: noise sensitivity is the main declared risk. Frozen as v1 (tag `v1-frozen`).
+- Protocol amendment A1 (2026-10-14): development reopened for exactly one experiment (EXP-058); primary version fixed before held-out access.
+- EXP-058 (amendment A1, 21 configurations, 42 predictions before GT; synthetic 16/16, main 27/27): **SELECTED F5_R0 = v2, PRIMARY; v1 SECONDARY**.
+  - The v1 pipeline with anisotropic diffusion of T2 (explicit fixed parameters), without recovery.
+  - Dice 0.669340 / 0.653000, DevelopmentScore 0.661169 vs 0.600034. The pn3 FP fall from 3,123 to 857.
+  - Trade-off: pn3 lesion detection 28 → 16 (SMALL 6 → 1), Recall 0.697 → 0.603.
+  - The morphological reconstruction R1/R2 is rejected (it restores connected FP; R2 leaks into S1).
+  - Development CLOSED (no EXP-059). Next: Phase 96 freeze of v2 + v1.
 
 Code debugging, syntax fixes and checks that a MATLAB function works are not experiments and are not recorded in this log.
 
@@ -9995,4 +10003,170 @@ Rules:
   5. No diagnostic using the GT is run to decide the structure of the EXP-058 grid.
 Declared cost: pn0 / pn3 are used for one more design choice; part of any v2 gain may be
   adaptation to them. The held-out test judges generalization.
+```
+
+---
+
+### EXP-058 — v2 development experiment under protocol amendment A1: noise filtering x extent recovery
+
+#### Pre-registration (written before EXP-058 was run; reviewed by the user and approved on 2026-10-14)
+
+```text
+Status: the ONLY experiment allowed by amendment A1; no EXP-059. Development data only.
+Data: T1 + T2, pn0 + pn3; held-out not accessed. EXP-021 brain mask unchanged (not recomputed).
+Fixed v1 pipeline (v1 freeze record): T1 partition -> S1 / S2 -> TA inside S2 ->
+  square-3 opening per slice AND S2 -> G1 (single-slice 26-connected 3D components removed).
+Factor F (applied after /4095, before any support or threshold):
+  F0 none
+  F1 / F2 / F3  Gaussian sigma 0.5, 3x3, replicate, per axial slice (gaussianFilterSlices;
+                result clipped to [0,1] as in EXP-056, error if the excursion exceeds 1e-12)
+                on T1 / T2 / both
+  F4 / F5 / F6  anisotropic diffusion, per axial slice, imdiffusefilt with EXPLICIT parameters
+                (frozen definition, independent of future MATLAB defaults):
+                  ConductionMethod "exponential", Connectivity "maximal" (8-neighbour in 2D),
+                  NumberOfIterations 5, GradientThreshold = 0.10 x (max - min) of the slice;
+                constant slices (max = min) returned unchanged (diffusion of a constant image is
+                the identity; avoids a zero gradient threshold); same [0,1] range check as F1-F3;
+                on T1 / T2 / both
+                The synthetic check records whether this explicit call equals imdiffusefilt(slice)
+                with default options on non-constant slices. If it does not, the explicit
+                definition above still holds and the difference is documented.
+  A filtered T1 changes the T1 partition, therefore S1 and S2. A filtered T2 changes TA (always
+  re-estimated inside S2, as in v1) and the reconstruction masks.
+Factor R (after the complete v1 pipeline; nothing is applied after R):
+  R0 none (= v1 output of that F)
+  R1 imreconstruct(marker = v1 output, mask = S2 AND T2f > TA_S2), 26-connectivity
+     (mask = the TA candidate inside S2 before the opening)
+  R2 imreconstruct(marker = v1 output, mask = S1 AND T2f > TA_S2), 26-connectivity
+     (same numeric TA_S2 of the configuration; no threshold estimated in S1)
+  Invariants checked for every F and condition: R0 inside R1 inside R2;
+  R1 inside (S2 AND T2f > TA_S2); R2 inside (S1 AND T2f > TA_S2).
+Grid: 7 F x 3 R = 21 configurations, 42 predictions, IDs F?_R?; all saved before the GT is loaded.
+Base check: F0_R0 must equal the frozen v1 prediction voxel by voxel (pn0, pn3), otherwise
+  TECHNICALLY BLOCKED.
+Selection: Phase-37 rule (complete-volume Dice, DevelopmentScore, no tolerance). Exact ties:
+  weaker-condition Dice, then fewer blocks (Gaussian 1 per filtered volume, anisotropic 2 per
+  filtered volume, R1 = 1, R2 = 2), then ID.
+Primary for the final test (amendment A1): the v1 DevelopmentScore is read from the frozen
+  artifact results/metrics/exp057_selected_configuration.csv and verified against the recorded
+  value 0.600033865204608 (sanity check). v2 = winner only if its DevelopmentScore is strictly
+  higher than v1's; if the winner is F0_R0, there is no v2 and v1 is primary.
+Declared failure modes (no post-hoc fix):
+  - pn0 has no added noise: filtering may cost Dice there and lose on the mean score even if it
+    helps pn3;
+  - the Gaussian may blur lesions of a few voxels;
+  - the fixed diffusion parameters may not match the noise level of each condition;
+  - R1 / R2 also restore T2-bright voxels connected to a seed that are not lesion
+    (e.g. ventricle-border partial-volume rims);
+  - R2 may leak far into S1 along connected bright structures above TA_S2;
+  - lesions with no surviving v1 seed (erased by the opening, or entirely outside S2) cannot
+    be recovered by R.
+Forbidden: other sigma / diffusion parameters, other filter families, filtering the EXP-021 mask
+  input, thresholds estimated in S1, morphology or component rules after R, GT diagnostics
+  before the run, grid extensions, EXP-059.
+Post-selection diagnostics only (do not change the winner): secondary metrics, lesion-wise
+  (Phase-93 rule), SMALL / LARGE, lesions lost / gained vs v1.
+```
+
+#### Results (run 2026-10-14; synthetic check PASS 16/16; main script `experiments/exp058_v2_tuning.m` PASS 27/27)
+
+```text
+Base check: F0_R0 = frozen v1 voxel by voxel (pn0, pn3); v1 DevelopmentScore read from the
+  artifact and verified. (F0_R0 shows deltaVsV1 = 1.1e-16 because the CSV stores 15 significant
+  digits; harmless: the A1 rule also requires winner != F0_R0, and the winner gap is 0.061.)
+Synthetic INFO (recorded, not a pass condition): the explicit anisotropic call does NOT equal
+  imdiffusefilt(slice) with default options; the MATLAB default gradient threshold is therefore not
+  "10 % of the slice range". The frozen explicit definition holds (pre-registered).
+Ranking (Phase-37 rule):
+  1 F5_R0 anisotropic T2 only    Dice 0.669340 / 0.653000  DevelopmentScore 0.66116938387951 (+0.061136)
+  2 F6_R0 anisotropic T1 + T2    0.6635 / 0.65099   0.65725
+  3 F2_R0 Gaussian T2 only       0.64817 / 0.63998  0.64407
+  4 F3_R0 Gaussian T1 + T2       0.6419 / 0.63576   0.63883
+  5 F1_R0 Gaussian T1 only       0.65552 / 0.57035  0.61293
+  6 F0_R0 frozen v1              0.66104 / 0.53903  0.60003
+  9 F4_R0 anisotropic T1 only    0.68409 / 0.38456  0.53433 (best pn0 Dice; pn3: S2 726,829 voxels,
+        TA_S2 0.5014, FP 7,998)
+  R1 configurations: ranks 7-14 (best F6_R1 0.57517); R2 configurations: ranks 15-21 (< 0.035).
+WINNER: F5_R0. PRIMARY VERSION FOR THE FINAL TEST (amendment A1): v2 = F5_R0; secondary: v1.
+v1 vs v2 (complete volume):
+  pn0: Dice 0.66104 -> 0.66934; Precision 0.66437 -> 0.69969; Recall 0.65774 -> 0.64151;
+       TP 2310 -> 2253, FP 1167 -> 967, FN 1202 -> 1259; volume error 1.00 % -> 8.31 %
+  pn3: Dice 0.53903 -> 0.65300; Precision 0.43942 -> 0.71193; Recall 0.69704 -> 0.60308;
+       TP 2448 -> 2118, FP 3123 -> 857, FN 1064 -> 1394; volume error 58.63 % -> 15.29 %
+  TA_S2 (normalized): pn0 0.6112 -> 0.6160; pn3 0.5182 -> 0.5630
+Lesion-wise (Phase-93 rule):
+  pn0: detected 19 -> 18; false components 0 -> 0 (of 17); SMALL 2 -> 2, LARGE 17 -> 16;
+       lost [2 45], gained [12]
+  pn3: detected 28 -> 16; false components 17 -> 1 (of 19); SMALL 6 -> 1, LARGE 22 -> 15;
+       lost [2 12 21 24 30 32 38 43 45 46 58 59], gained none
+Recovery (F0): R1 TP +572 / +554 but FP +4,606 / +9,131; R2 FP 209,719 / 584,713 (leak into S1).
+Figures: exp058_filters_t2_pn3.png (GT-free), exp058_tuning_ranking.png, exp058_v1_vs_winner.png
+```
+
+#### Interpretation
+
+- **Noise filtering of T2 is the effective block.** All four configurations that filter T2 without recovery beat v1. In pn3 the anisotropic filter raises TA_S2 from 0.518 to 0.563, cuts FP from 3,123 to 857 and brings pn3 close to pn0 (Dice 0.653 vs 0.669; predicted voxels 2,975 vs 3,220). Inside S2, the v1 noise sensitivity came mostly from the threshold on noisy T2.
+- **Filtering T1 alone is unstable:** F4_R0 is the best on pn0 but the worst R0 on pn3, where S2 grows and TA_S2 drops.
+- **The extent recovery failed, as declared in the pre-registration.** R1 restores lesion voxels but more FP connected to the seeds: the opening also disconnects lesion cores from adjacent T2-bright structures. R2 leaks through S1 (declared failure mode). Nothing was adjusted.
+- **Trade-off of v2 (not a selection criterion):** in pn3 v2 detects fewer GT lesions under the permissive any-overlap rule (28 -> 16; SMALL 6 -> 1), and voxel Recall drops (0.697 -> 0.603). The v1 pn3 count was higher than pn0 (28 vs 19) together with 17 false components. This is compatible with noise-driven small overlaps, but it was not verified. v2 is more conservative and more consistent across conditions, at the cost of small-lesion detection.
+- The selection follows the pre-registered rule; the margin over rank 2 is small (0.0039), while the "filter T2" family is consistently ahead.
+- **Generalization:** the held-out levels pn5 / pn7 / pn9 are noisier than pn3. The fixed diffusion parameters (5 iterations, threshold relative to the slice range) were not tuned for them.
+
+#### Conclusion
+
+```text
+v2 = F5_R0 (v1 pipeline with anisotropic diffusion of T2, explicit fixed parameters; no recovery).
+PRIMARY for the final test: v2; SECONDARY: v1. Decided before any held-out access (amendment A1).
+Development is CLOSED: no EXP-059. Next: Phase 96 (freeze v2 + v1), then held-out download and Phase 97.
+Files: data/processed/phase95_exp058_v2_{pn0,pn3}_selected_prediction.mat;
+  results/metrics/exp058_{tuning_grid_results,tuning_ranking,selected_configuration,v1_vs_winner,
+  winner_lesion_diagnostics}.csv
+```
+
+#### v2 freeze record (2026-10-14, before any EXP-059 work)
+
+```text
+v2 = EXP-058 winner F5_R0, FROZEN as a development snapshot.
+Pipeline: the frozen v1 pipeline (v1 freeze record) with ONE change: T2 (after /4095) is filtered by
+  anisotropic diffusion per axial slice before the T2 threshold:
+  imdiffusefilt(slice, GradientThreshold = 0.10 x (max - min) of the slice, NumberOfIterations 5,
+  Connectivity "maximal" (8-neighbour), ConductionMethod "exponential"); constant slices unchanged;
+  output range-checked and clipped to [0,1]. T1 not filtered; no recovery step.
+Code: src/preprocessing/anisotropicDiffusionSlices.m, src/segmentation/generateExp058Prediction.m
+  (config F5: filterType "anisotropic", filterT1 false, filterT2 true, recovery "R0");
+  experiments/exp058_v2_tuning.m (regenerates the predictions).
+Development scores: Dice 0.66934046345811 (pn0) / 0.65299830430091 (pn3);
+  DevelopmentScore 0.66116938387951. Predicted voxels 3,220 / 2,975.
+Artifacts (SHA-256 of the saved files; on regeneration, identity is checked on M_pred with isequal):
+  data/processed/phase95_exp058_v2_pn0_selected_prediction.mat
+    D0BD81358D9AD8070C923F9DFDF4A505D0E5EFD75AC6AB9EDEC58C5107AC291D
+  data/processed/phase95_exp058_v2_pn3_selected_prediction.mat
+    31F1E459F42ADA11204B4B342DE3E50125C08420523BF0C5F8C06D8337073BA7
+Version control: Git commit "fase 96b" + tag v2-frozen.
+Held-out pn1 / pn5 / pn7 / pn9: NOT accessed, NOT downloaded.
+```
+
+### Protocol amendment A2 (2026-10-14): one more development experiment (EXP-059) before the test
+
+```text
+Amendment A1 stated "no EXP-059". That statement is NOT rewritten; A2 supersedes it, decided by the
+user, whose goal is the most effective algorithm possible.
+Rules:
+  1. v1 and v2 are frozen and never modified.
+  2. EXP-059 is the final development experiment BEFORE the held-out test. After EXP-059, the
+     selected primary pipeline is mandatorily frozen before any held-out data are accessed.
+     No decision based on pn1 / pn5 / pn7 / pn9 may modify that frozen pipeline.
+  3. Primary for the final test, fixed on development data only: primary = EXP-059 winner (v3)
+     if its DevelopmentScore is strictly higher than v2's (read from the frozen artifact),
+     otherwise v2.
+  4. Phase 97 evaluates the primary ("primary held-out evaluation") and the other frozen
+     versions ("secondary locked-version comparisons", showing the evolution of the method).
+     If a secondary version scores higher on the held-out data, this is reported; it does not
+     become the final algorithm. Adopting it would require confirmation on new independent data.
+  5. Any development after the test (v4) is a separately declared phase. Data used to develop v4
+     (e.g. rf20 / rf40, msles1 / msles3) become development data and cannot also serve as the
+     independent test of v4; that would require a further untouched set.
+Declared cost: pn0 / pn3 have now guided many decisions; every development score (0.661 and the
+  EXP-059 result) is in-sample and optimistic by construction. The held-out result is the
+  relevant measure.
 ```

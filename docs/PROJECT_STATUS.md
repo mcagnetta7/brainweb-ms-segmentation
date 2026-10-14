@@ -14,7 +14,17 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
   - **Volumetric evaluation (88–90): COMPLETE.**
   - **v1 = S2_TA_M2_G1 FROZEN (2026-10-14, Git tag `v1-frozen`).** Freeze record in `EXPERIMENT_LOG.md` after EXP-057.
   - **Protocol amendment A1 (2026-10-14):** development is reopened for exactly one experiment, EXP-058 (v2: noise filter F × reconstruction R). Primary for the test = v2 only if its DevelopmentScore is strictly higher than v1's, otherwise v1. The primary is fixed before any held-out access, and both versions are tested in Phase 97. No EXP-059.
-  - **Next: EXP-058 pre-registration (draft under review), then Phase 96 (freeze primary + secondary).**
+  - **EXP-058 (v2), complete — PRIMARY VERSION FOR THE FINAL TEST: v2 = `F5_R0`; secondary: v1.**
+    - v2 = the v1 pipeline with T2 filtered by anisotropic diffusion (`src/preprocessing/anisotropicDiffusionSlices.m`, `imdiffusefilt` per slice, 5 iterations, exponential, 8-neighbour, gradient threshold 0.10 × slice range). Generator: `src/segmentation/generateExp058Prediction.m` with config F5 (`filterType` "anisotropic", T2 only, `recovery` "R0").
+    - Dice 0.669340 / 0.653000; DevelopmentScore **0.661169** (v1 0.600034). pn3 FP 3,123 → 857; Precision 0.700 / 0.712, Recall 0.642 / 0.603.
+    - Trade-off: pn3 detects 16 of 59 GT lesions (v1 28), SMALL 1 (v1 6).
+    - The morphological reconstruction (R1/R2) is rejected by the grid.
+    - Files: `data/processed/phase95_exp058_v2_{pn0,pn3}_selected_prediction.mat`. Notes §13.72.
+  - **v2 FROZEN (2026-10-14, tag `v2-frozen`).**
+  - **Amendment A2 (2026-10-14):** EXP-059 (v3: D2/D3 anisotropic × opening M0/M1/M2 × G0/G1 on the v2 base) is the final development experiment before the test.
+    - Primary = v3 only if strictly better than v2 on the DevelopmentScore, otherwise v2; it is fixed before any held-out access.
+    - Phase 97 evaluates the primary plus the frozen secondary versions.
+  - **Next: EXP-059, then the mandatory freeze of the primary (Phase 96), held-out download, Phase 97.**
 - **Phase 95 supplementary experiment (EXP-057), complete — CURRENT SELECTED DEVELOPMENT CONFIGURATION:**
   - **Search:** 36 configurations / 72 predictions on `pn0`/`pn3` (T1-derived support S0/S1/S2 × T2 threshold TA/TB inside the support × opening M0/M1/M2 × G0/G1), all generated before the GT. The baseline S0_TA_M2_G1 reproduces the EXP-056 winner voxel by voxel.
   - **Selected: `S2_TA_M2_G1`.**
@@ -252,4 +262,5 @@ Reusable functions: `src/segmentation/generateLesionCandidateMask.m` (current ca
 | Phase 94 small vs large GT lesions (EXP-055) | notes §13.69 |
 | Phase 95 development-only tuning (EXP-056) | notes §13.70; PROJECT_SPEC §19.2 |
 | Phase 95 T1-derived anatomical support (EXP-057, final development experiment) | notes §13.71; PROJECT_SPEC §19.2 |
+| v1 freeze, amendment A1, EXP-058 (v2) | notes §13.72; `EXPERIMENT_LOG.md` after EXP-057 |
 | EXP-022 … 027 (Phases 54–59) | notes §13.33–13.38; `EXPERIMENT_LOG.md` (summary table §6, status §11) |

@@ -191,11 +191,16 @@ Allowed **only** as the anisotropic-filter level of the pre-registered EXP-058 g
 
 - **Course status:** the course material names anisotropic filters as a class of non-linear filters, without an operative treatment comparable to Gaussian or median filtering. EXP-003 (notes §13.24) had excluded them for that reason. Their use here is a documented project exception, like the 3D extension of EXP-021.
 - **Implementation:** MATLAB `imdiffusefilt` (Perona–Malik diffusion, introduced in R2018a), applied in 2D to each axial slice.
-- **Parameters:** the MATLAB defaults only, with no tuning and no variants:
+- **Parameters (frozen explicit definition, passed explicitly to `imdiffusefilt`; no tuning, no variants):**
   - `NumberOfIterations` 5;
   - `ConductionMethod` "exponential";
-  - `Connectivity` "maximal";
-  - `GradientThreshold` = the documented default, "10 % of the dynamic range of the image".
+  - `Connectivity` "maximal" (8 neighbours in 2D);
+  - `GradientThreshold` = 0.10 × (max − min) of each slice; constant slices are returned unchanged.
+  - These values were chosen to mirror the documented defaults. The EXP-058 synthetic check showed that this explicit call does **not** equal `imdiffusefilt` with default options, so this is **not** "the MATLAB default". Only the explicit definition counts for the project.
+- **Volumetric extension (EXP-059, approved by the user on 2026-10-14):** a project extension, not claimed to be taught in the course material.
+  - `imdiffusefilt` is applied directly to the whole 3D T2 volume with the same classical diffusion concept and the same explicit rule.
+  - Parameters: 5 iterations, exponential conduction, `Connectivity` "maximal" (26 neighbours in 3D), `GradientThreshold` = 0.10 × (max − min) of the whole volume.
+  - D2 and D3 share the same relative rule, not the same numeric threshold.
 - **Rationale:** smooth noise in uniform regions while limiting blur across edges, which matters for lesions of a few voxels.
 - **Not allowed:** other diffusion parameters, bilateral filtering, non-local means or other edge-preserving filters.
 

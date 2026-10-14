@@ -858,7 +858,15 @@ This rule is defined before any parameter optimization. It applies to every late
   - M: none / opening `diamond 1` / opening `square 3`;
   - G: none / removal of single-slice 26-connected 3D components.
 - **Winner (selected development parameters): `S2_TA_M2_G1`.** DevelopmentScore 0.600034 (Dice 0.661039 / 0.539029) vs 0.058158 for `P0_T2_M2_G1`.
-- **Status:** selected but not yet frozen. The freeze is Phase 96; no test result exists.
+- **Status:** frozen as **v1** (tag `v1-frozen`).
+
+**Protocol amendment A1 and EXP-058 (v2):** one further pre-registered experiment on top of the frozen v1.
+- **Grid:** 21 configurations:
+  - F: none / Gaussian σ 0.5 / anisotropic diffusion with fixed explicit parameters, on T1, T2 or both;
+  - R: none / morphological reconstruction inside S2 / towards S1.
+- **Winner = v2 = `F5_R0`** (anisotropic diffusion of T2, no recovery). DevelopmentScore 0.661169 (Dice 0.669340 / 0.653000).
+- **Primary for the final test:** v2; **secondary:** v1. This was fixed before any held-out access, and both versions are tested in Phase 97.
+- **Status:** v2 not yet frozen (Phase 96). No further development experiments.
 
 **Data:**
 

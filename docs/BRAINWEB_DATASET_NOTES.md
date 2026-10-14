@@ -4900,3 +4900,26 @@ These are development results; no held-out data was used. **Phase 70 COMPLETE.**
 - **Status:** selected development configuration, **NOT yet frozen**. EXP-057 is the final development experiment.
 
 **Phase 95 (including EXP-057) COMPLETE.** Next: Phase 96, freeze final parameters.
+
+
+### 13.72 Phase 95, amendment A1: v1 freeze and v2 experiment (EXP-058)
+
+- **v1 freeze:** S2_TA_M2_G1 (EXP-057) frozen on 2026-10-14 (commit "fase 96a", tag `v1-frozen`). The configuration and SHA-256 of the prediction files are in `EXPERIMENT_LOG.md`.
+- **Amendment A1:** after EXP-057 the user reopened development for exactly one experiment. The primary version for the final test is fixed before any held-out access (v2 only if strictly better than v1 on the DevelopmentScore), and both versions are tested.
+- **EXP-058 grid:** 7 F × 3 R = 21 configurations on top of the frozen v1.
+  - F: none; Gaussian σ 0.5 on T1 / T2 / both; anisotropic diffusion on T1 / T2 / both.
+  - R: none; morphological reconstruction from the v1 seeds inside S2 (R1) or towards S1 (R2).
+  - The anisotropic diffusion is a narrow, user-approved project exception (ALLOWED_TECHNIQUES §4.4). It uses `imdiffusefilt` with explicit fixed parameters: 5 iterations, exponential conduction, 8-neighbour, gradient threshold 0.10 × slice range.
+- **Code:**
+  - `src/preprocessing/anisotropicDiffusionSlices.m`;
+  - `src/segmentation/generateExp058Prediction.m`;
+  - synthetic check `experiments/exp058_filter_recovery_check.m` (16/16);
+  - main script `experiments/exp058_v2_tuning.m` (27/27).
+- **Default parameters:** the explicit call is not identical to `imdiffusefilt` with default options. The frozen explicit definition applies, as pre-registered.
+- **Result:** **v2 = F5_R0** (anisotropic diffusion of T2 only, no recovery).
+  - DevelopmentScore 0.661169 vs 0.600034 for v1; Dice 0.669 / 0.653.
+  - In pn3 the FP fall from 3,123 to 857, and TA_S2 rises from 0.518 to 0.563 (close to pn0's 0.616).
+  - All T2-filtered configurations beat v1. Filtering T1 alone is unstable (anisotropic: best pn0, poor pn3).
+- **Recovery rejected by the grid:** R1 adds more FP than TP, because the opening also disconnects lesion cores from adjacent bright structures. R2 leaks into S1 (up to about 585,000 predicted voxels). Both failure modes were declared in advance.
+- **Trade-off:** in pn3, v2 detects fewer GT lesions (28 → 16, SMALL 6 → 1) and has a lower Recall (0.697 → 0.603). It is more conservative and more consistent across conditions.
+- **Status:** v2 primary, v1 secondary; development closed (no EXP-059). Next: Phase 96, freeze of both versions, then held-out download and Phase 97.
