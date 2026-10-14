@@ -637,6 +637,21 @@ Maintain this table as experiments are completed.
 | EXP-040 | Individual-modality benchmark T1 / T2 / PD, Class 1/2/3 (Phase 78) | T1/T2/PD msles2 1mm rf0, pn0 + pn3, EXP-021 | Source modality and class; multithresh N = 2 + square3 opening for all | 0.0566 (T2) | 0.0570 (T2) | 0.056845 (T2 C3) | n/a | n/a | BEST INDIVIDUAL MODALITY: T2 Class 3 (PD C3 0.016424, T1 C3 0.004280); pipeline unchanged |
 | EXP-041 | T2 + PD intersection fusion (Phase 80) | Phase-78 T2 / PD Class-3 masks, pn0 + pn3 | Fusion M_T2 AND M_PD (one predefined rule, no GT) | not computed | not computed | n/a | n/a | n/a | FUSED PREDICTION GENERATED (T2 retained 99.96 % / 92.06 %); evaluation in Phase 81 |
 | EXP-042 | Mono T2 vs T2 AND PD comparison (Phase 81) | Phase-71 M_pred vs EXP-041, pn0 + pn3, GT label 10 | None (evaluation of the frozen fusion) | 0.0566 → 0.0567 | 0.0570 → 0.0563 | 0.056845 → 0.056472 | n/a | n/a | REJECT_MULTIMODAL_FUSION; T2-only retained (removed pn3: 5,149 FP / 177 TP) |
+| EXP-043 | Formal voxel-wise confusion matrix (Phase 82) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation bookkeeping: TP/FP/FN/TN) | n/a | n/a | n/a | n/a | n/a | EVALUATOR VALIDATED: TN 7,036,854 / 7,040,572; TP/FP/FN = Phase 81 |
+| EXP-044 | Formal Dice implementation (Phase 83) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation: Dice from Phase-82 counts) | 0.056647 | 0.057043 | n/a | n/a | n/a | DICE FORMALIZED AND VALIDATED (= earlier T2 Dice) |
+| EXP-045 | Formal IoU / Jaccard implementation (Phase 84) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation: IoU from Phase-82 counts) | n/a | n/a | n/a | n/a | n/a | IoU FORMALIZED AND VALIDATED: 0.029149 / 0.029359 (= Dice/(2−Dice)) |
+| EXP-046 | Formal Precision implementation (Phase 85) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation: Precision from Phase-82 counts) | n/a | n/a | n/a | 0.029727 / 0.030015 | n/a | PRECISION FORMALIZED AND VALIDATED (~97 % of predicted voxels are FP) |
+| EXP-047 | Formal Recall / Sensitivity implementation (Phase 86) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation: Recall from Phase-82 counts) | n/a | n/a | n/a | n/a | 0.599943 / 0.573178 | RECALL FORMALIZED AND VALIDATED (voxel-wise; low Precision + moderate Recall) |
+| EXP-048 | Formal Specificity implementation (Phase 87) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (evaluation: Specificity from Phase-82 counts) | n/a | n/a | n/a | n/a | n/a | SPECIFICITY FORMALIZED AND VALIDATED: 0.990322 / 0.990845 (class imbalance; not overall accuracy) |
+| EXP-049 | Formal GT lesion volume (Phase 88) | GT label 10 only (shared by pn0 / pn3) | None (evaluation reference: V_GT = N_GT × V_voxel) | n/a | n/a | n/a | n/a | n/a | GT VOLUME FORMALIZED: 3,512 voxels × 1 mm³ = 3,512 mm³ (3.512 mL) |
+| EXP-050 | Formal predicted lesion volume (Phase 89) | Phase-71 M_pred, pn0 + pn3 separately | None (evaluation: V_pred = N_pred × V_voxel) | n/a | n/a | n/a | n/a | n/a | PREDICTED VOLUME FORMALIZED: 70,878 / 67,066 mm³ (TP + FP); no GT comparison |
+| EXP-051 | Formal lesion-volume error (Phase 90) | EXP-049 V_GT + EXP-050 V_pred (pn0, pn3) | None (evaluation: \|V_pred − V_GT\| / V_GT × 100) | n/a | n/a | n/a | n/a | n/a | VOLUME ERROR: 1918.17 % / 1809.62 %, both overestimation (not an overlap metric) |
+| EXP-052 | Consolidated complete-volume 3D evaluation (Phase 91) | EXP-043..051 artifacts, pn0 + pn3 | None (consolidation of formal results) | 0.056647 | 0.057043 | n/a | 0.029727 / 0.030015 | 0.599943 / 0.573178 | PRIMARY COMPLETE-3D TABLE ESTABLISHED; dominant problem = FP burden |
+| EXP-053 | Slice-wise diagnostic evaluation (Phase 92) | Phase-71 M_pred vs GT label 10, pn0 + pn3, 181 axial slices | None (diagnostic profiling) | n/a | n/a | n/a | n/a | n/a | DIAGNOSTIC: FP widespread but central-heavy (k ~70-104); 40/41 GT slices with Recall 0; summed counts = Phase 91 |
+| EXP-054 | Lesion-wise 3D analysis, 26-connectivity, any-overlap rule (Phase 93) | Phase-71 M_pred vs GT label 10, pn0 + pn3 | None (object-level diagnostic) | n/a | n/a | n/a | n/a | n/a | 59 GT lesions: detected 15 / 14, missed 44 / 45; false components 331 / 287; one merged object holds ~88 % of TP |
+| EXP-055 | Small-vs-large GT lesion analysis, median split 7 voxels (Phase 94) | EXP-054 status + GT component sizes | None (size-stratified diagnostic) | n/a | n/a | n/a | n/a | n/a | SMALL detected 3/31, 2/31; LARGE 12/28 both; size explains failure PARTLY |
+| EXP-056 | Development-only tuning, 24-configuration grid P x T x M x G (Phase 95) | T2 pn0 + pn3, GT label 10 after all predictions | Gaussian / multithresh N / opening / single-slice 3D component removal | 0.058067 | 0.058248 | 0.058158 | 0.030520 / 0.030695 | 0.59596 / 0.56919 | SELECTED P0_T2_M2_G1 (+0.00131 vs baseline); superseded by EXP-057 |
+| EXP-057 | Final development experiment: T1-derived anatomical support, 36-configuration grid S x T x M x G (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Support S0/S1/S2 / T2 threshold TA/TB inside support / opening / single-slice 3D component removal | 0.661039 | 0.539029 | 0.600034 | 0.664366 / 0.439418 | 0.657745 / 0.697039 | SELECTED S2_TA_M2_G1 (+0.5419 vs EXP-056 winner); not yet frozen |
 
 Preprocessing experiments without segmentation use `n/a` for the segmentation metrics.
 
@@ -871,6 +886,59 @@ Roadmap integration milestones (not experiments):
   - DevelopmentScore 0.056472 vs 0.056845 (Δ −0.000374). The Dice change is +0.000022 in `pn0` and −0.000769 in `pn3`.
   - The fusion removed mostly FP (`pn3`: 5,149 FP, 177 TP), but the removed set is slightly richer in lesion voxels (3.32 %) than the Dice break-even (2.85 %).
   - The T2-only pipeline (Phase-71 `M_pred`) is retained. The multimodal stage is complete.
+- EXP-043 (Phase 82, formal voxel-wise confusion counts with `computeVoxelConfusion`; convention rows = GT, columns = prediction, `[TN FP; FN TP]`): **EVALUATOR IMPLEMENTED AND VALIDATED** (synthetic 12/12, real 46/46).
+  - `pn0`: TP 2,107 / FP 68,771 / FN 1,405 / TN 7,036,854. `pn3`: TP 2,013 / FP 65,053 / FN 1,499 / TN 7,040,572.
+  - TP/FP/FN reproduce Phase 81 exactly. No derived metric.
+- EXP-044 (Phase 83, `computeDiceFromConfusion` on the Phase-82 counts, Dice = 2TP / (2TP + FP + FN), project convention 0/0 → 1): **DICE FORMALIZED AND VALIDATED** (synthetic 16/16, real 36/36).
+  - `pn0` 0.0566473988439306 (4,214 / 74,390); `pn3` 0.0570432712743348 (4,026 / 70,578).
+  - Reproduces EXP-043 counts and the earlier T2 Dice. No other metric.
+- EXP-045 (Phase 84, `computeIoUFromConfusion` on the Phase-82 counts, IoU = Jaccard = TP / (TP + FP + FN), project convention 0/0 → 1): **IoU FORMALIZED AND VALIDATED** (synthetic 16/16, real 34/34).
+  - `pn0` 0.0291493158834027 (2,107 / 72,283); `pn3` 0.0293590024064756 (2,013 / 68,565).
+  - Reproduces EXP-043 counts and satisfies IoU = Dice/(2 − Dice) with the Phase-83 values.
+- EXP-046 (Phase 85, `computePrecisionFromConfusion`, Precision = TP / (TP + FP), project convention 0/0 → 1 without implying successful detection): **PRECISION FORMALIZED AND VALIDATED** (synthetic 16/16, real 34/34).
+  - `pn0` 0.0297271367702249 (2,107 / 70,878); `pn3` 0.0300152088986968 (2,013 / 67,066).
+  - About 97 % of the predicted-positive voxels are FP.
+- EXP-047 (Phase 86, `computeRecallFromConfusion`, Recall = Sensitivity = TP / (TP + FN), project convention 0/0 → 1 without implying good predictions): **RECALL FORMALIZED AND VALIDATED** (synthetic 16/16, real 34/34).
+  - `pn0` 0.5999430523918 (2,107 / 3,512); `pn3` 0.573177676537585 (2,013 / 3,512).
+  - About 60 % / 57 % of the lesion **voxels** are recovered (voxel-wise, not lesion-wise). Low Precision + moderate Recall.
+- EXP-048 (Phase 87, `computeSpecificityFromConfusion`, Specificity = TN / (TN + FP), project convention 0/0 → 1): **SPECIFICITY FORMALIZED AND VALIDATED** (synthetic 16/16, real 34/34).
+  - `pn0` 0.990321611399419; `pn3` 0.990844858826634, i.e. about 99 % of the non-lesion voxels are rejected.
+  - Severe class imbalance: this is not overall accuracy, and it coexists with Precision ≈ 3 % and Dice ≈ 0.057.
+- EXP-049 (Phase 88, `computeBinaryMaskVolume` on M_GT only, spacing 1 × 1 × 1 mm from Phase 26): **GT LESION VOLUME FORMALIZED** (synthetic 14/14, real 27/27).
+  - 3,512 voxels × 1 mm³ = **3,512 mm³** (3.512 cm³ = 3.512 mL), one value shared by `pn0` and `pn3`.
+  - No prediction used.
+- EXP-050 (Phase 89, the same `computeBinaryMaskVolume` on the Phase-71 `M_pred`, unchanged): **PREDICTED LESION VOLUME FORMALIZED** (36/36).
+  - `pn0` 70,878 voxels → **70,878 mm³** (70.878 mL); `pn3` 67,066 voxels → **67,066 mm³** (67.066 mL).
+  - This is the segmented volume (TP + FP). No comparison with V_GT.
+- EXP-051 (Phase 90, `computeVolumeErrorPercent` on the EXP-049 / EXP-050 volumes in mm³, PROJECT_SPEC formula |V_pred − V_GT| / V_GT × 100): **VOLUME ERROR FORMALIZED** (synthetic 16/16, real 33/33).
+  - `pn0` 1918.16628701595 % (+67,366 mm³); `pn3` 1809.62414578588 % (+63,554 mm³). Both are overestimations.
+  - Values above 100 % are valid. This compares total volume only, not spatial overlap.
+- EXP-052 (Phase 91, consolidation of the EXP-043..051 artifacts into `exp052_complete_3d_metrics.csv`; no new metric, 59/59): **PRIMARY COMPLETE-VOLUME 3D DEVELOPMENT TABLE ESTABLISHED**.
+  - Pattern: moderate Recall, very low Precision / Dice / IoU, strongly overestimated volume, Specificity high because of class imbalance.
+  - Phase 92 slice-wise metrics will be diagnostic only.
+- EXP-053 (Phase 92, `computeSliceWiseMetrics` over all 181 axial slices, `pn0`/`pn3`; summed counts = Phase 91, 58/58): **SLICE-WISE DIAGNOSTIC PROFILE ESTABLISHED**.
+  - FP are on 121 / 117 slices, about 62–64 % of them in k ≈ 70–104 (peaks k 92–95). 37 / 33 slices are prediction-only.
+  - FN peak at k 97–103. 40 / 41 GT slices have prediction but no overlap.
+  - The same pattern appears in `pn0` and `pn3`. Diagnostic only: no averages, no location rule.
+- EXP-054 (Phase 93, 26-connected 3D objects, pre-registered rule "match iff ≥ 1 shared voxel", many-to-many; 59/59): **LESION-WISE OBJECT ANALYSIS ESTABLISHED**.
+  - There are 59 GT lesions: 15 / 14 detected and 44 / 45 missed.
+  - 4 of 335 / 291 predicted components are matched; 331 / 287 are false.
+  - One merged predicted object (the largest Phase-72 component) touches 13 / 12 GT lesions and holds about 88–89 % of the TP.
+  - The predicted components reproduce Phase 72, and the summed overlap equals the Phase-91 TP.
+- EXP-055 (Phase 94, GT lesion size = 26-connected component voxel count; median threshold 7 voxels computed from GT sizes before the outcomes were read; SMALL ≤ 7 (31 lesions), LARGE > 7 (28); 38/38): **SIZE EXPLAINS THE FAILURE PARTLY**.
+  - SMALL: detected 3 / 2, with about 5 % of their voxels covered.
+  - LARGE: detected 12 / 12, coverage about 0.62 / 0.59, but 16 LARGE lesions are missed in both conditions.
+  - The median is evaluation-only, not a segmentation threshold.
+- EXP-056 (Phase 95, pre-registered 24-configuration grid, 48 predictions before GT, Phase-37 DevelopmentScore, no tolerance; 27/27): **SELECTED DEVELOPMENT CONFIGURATION P0_T2_M2_G1**.
+  - It keeps the baseline (no filter, multithresh N = 2 Class 3, square-3 opening) and adds the removal of single-slice 3D components.
+  - DevelopmentScore 0.058158 vs 0.056845 (+0.00131). FP −2,287 / −1,927, TP −14 / −14.
+  - Components 335 → 165 / 291 → 143. GT lesion 16 is lost (only single-slice support).
+  - The dominant FP problem is only marginally reduced. Superseded by EXP-057.
+- EXP-057 (Phase 95, final development experiment, pre-registered 36-configuration grid, 72 predictions before GT; synthetic 19/19, main 27/27): **SELECTED DEVELOPMENT CONFIGURATION S2_TA_M2_G1**.
+  - T2 multithresh (N = 2, highest class) re-estimated inside S2 = EXP-021 AND filled T1-high AND NOT T1-low; square-3 opening; single-slice 3D component removal.
+  - Dice 0.661039 / 0.539029, DevelopmentScore 0.600034 vs 0.058158. FP 66,484 → 1,167 / 63,126 → 3,123.
+  - GT lesions detected 19 / 28 of 59. S2 contains 3114 / 3058 of the 3512 GT voxels (Recall ceiling).
+  - pn3 has 2.7× the FP of pn0: noise sensitivity is the main declared risk. Not yet frozen; next Phase 96.
 
 Code debugging, syntax fixes and checks that a MATLAB function works are not experiments and are not recorded in this log.
 
@@ -8554,4 +8622,1377 @@ alternative fusion tested, no post-hoc retuning, no held-out data, config.m unch
 
 ```text
 Phase 82 - formal voxel-wise confusion matrix (not started).
+```
+
+---
+
+### EXP-043 — Phase-82 formal voxel-wise confusion matrix
+
+#### Pre-registration (written before EXP-043 was run)
+
+```text
+Roadmap phase: 82. Purpose: formal implementation and validation of voxel-wise TP / FP / FN / TN
+counts (evaluation bookkeeping, not a segmentation change).
+Retained prediction: Phase-71 T2 M_pred (Phase-81 decision REJECT_MULTIMODAL_FUSION verified from
+phase81_multimodal_decision.csv before evaluation; otherwise TECHNICALLY BLOCKED).
+Conditions: pn0 / pn3 development only. Held-out: NOT USED.
+GT: BrainWeb crisp phantom, label 10, complete 181x217x181 volume (no mask / ROI / slice range).
+Definitions (complete 3D volume): TP = pred 1 & GT 1; FP = pred 1 & GT 0; FN = pred 0 & GT 1;
+TN = pred 0 & GT 0 (direct logical counting).
+Confusion convention: rows = GT [0, 1], columns = prediction [0, 1]  ->  [TN FP; FN TP].
+Function: src/evaluation/computeVoxelConfusion.m (logical masks only, same size, non-empty;
+returns TP, FP, FN, TN, totalVoxels and the 2x2 matrix; no file access, no segmentation logic).
+Validation: synthetic tests (experiments/voxel_confusion_check.m); exact count identities; TP / FP /
+FN regression cross-check against the T2 rows of exp042_mono_vs_multimodal_metrics.csv (validation
+only, counts are computed independently).
+Metrics calculated: NONE (no Dice, IoU, precision, recall, specificity, accuracy, F1, volume error,
+slice-wise or lesion-wise analysis). TN is a count only; its large value is not evidence of a good
+segmentation. No segmentation modification, no tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeVoxelConfusion.m; experiments/voxel_confusion_check.m (synthetic, 12/12 PASS:
+perfect negative, perfect match, all four categories TP 1 / FP 2 / FN 3 / TN n-6, all-positive and
+all-negative prediction, size mismatch / non-logical / empty input rejected, inputs unchanged,
+deterministic, matrix orientation); experiments/exp043_voxel_confusion_matrix.m (MATLAB,
+2026-10-13, 46/46 PASS: Phase-81 decision verified, M_pred logical 181x217x181, GT label 10
+complete volume, function without file access / segmentation logic, four counts equal to an
+independent direct count, all count identities, regression with Phase 81, no derived metric,
+no slice- / lesion-wise evaluation, no segmentation, sources / GT / config.m unchanged).
+Label fix after the run (no effect on results): the check "complete GT used (no brain-mask
+intersection)" only verifies nnz(gtMask) == nnz(labels == 10); the absence of intersection follows
+from the code (gtMask = labels == 10). Renamed to "GT keeps every label-10 voxel of the volume".
+Outputs: results/metrics/exp043_voxel_confusion_matrix.csv,
+exp043_confusion_matrix_{pn0,pn3}.csv (rows gt0 / gt1, columns pred0 / pred1).
+```
+
+#### Quantitative Results
+
+```text
+                       pn0          pn3
+Total voxels           7,109,137    7,109,137
+Predicted positive     70,878       67,066
+Predicted negative     7,038,259    7,042,071
+GT positive            3,512        3,512
+GT negative            7,105,625    7,105,625
+TP                     2,107        2,013
+FP                     68,771       65,053
+FN                     1,405        1,499
+TN                     7,036,854    7,040,572
+
+Matrix (rows = GT [0,1], columns = prediction [0,1]):
+  pn0  [7,036,854  68,771;  1,405  2,107]
+  pn3  [7,040,572  65,053;  1,499  2,013]
+All identities hold exactly (TP+FP, TP+FN, TN+FN, TN+FP, sum = 7,109,137). TP / FP / FN reproduce
+the Phase-81 T2 diagnostic counts exactly (regression check only; counts computed independently).
+```
+
+#### Interpretation
+
+```text
+TN dominates (98.98 % / 99.04 % of the volume, computed afterwards from the CSV) because non-lesion
+voxels vastly outnumber lesion voxels;
+this is class imbalance, not evidence of a good segmentation (discussed formally in Phase 87).
+```
+
+#### Decision
+
+```text
+FORMAL VOXEL-WISE CONFUSION EVALUATOR IMPLEMENTED AND VALIDATED. No derived metric, no
+segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 83 - formal Dice implementation (not started).
+```
+
+---
+
+### EXP-044 — Phase-83 formal Dice implementation
+
+#### Pre-registration (written before EXP-044 was run)
+
+```text
+Roadmap phase: 83. Purpose: formal implementation and validation of the Dice coefficient.
+Prediction: Phase-71 T2 M_pred. Conditions: pn0 / pn3 development only. Held-out: NOT USED.
+GT: BrainWeb crisp label 10, complete 181x217x181 volume.
+Confusion source: computeVoxelConfusion (Phase 82); the Dice function does not count voxels.
+Formula: Dice = 2TP / (2TP + FP + FN) (TP, FP, FN only; TN not used).
+Zero-denominator convention (project implementation convention for the undefined 0/0 case, not
+taken from the course material): TP = FP = FN = 0 -> Dice = 1 (identical empty positive sets).
+Input validation: TP, FP, FN present, scalar, real, finite, non-negative, integer-valued; invalid
+counts are rejected, never rounded or replaced.
+Regression: confusion counts must equal exp043_voxel_confusion_matrix.csv exactly; Dice must
+reproduce the T2 rows of exp042_mono_vs_multimodal_metrics.csv within 1e-12 (absolute; only to
+absorb the ~15-significant-digit CSV text representation - the computation itself is identical).
+Outputs: one Dice per volume (pn0, pn3); no DevelopmentScore, no other metric (IoU, precision,
+recall, specificity, accuracy, F1, volume error), no slice- or lesion-wise evaluation, no figure.
+No segmentation change, no tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeDiceFromConfusion.m; experiments/dice_metric_check.m (synthetic, via
+computeVoxelConfusion -> computeDiceFromConfusion, 16/16 PASS: perfect match 1, disjoint 0,
+TP 2 / FP 1 / FN 3 -> 0.5, empty prediction 0, empty GT 0, both empty 1 (convention), full-positive
+match 1, symmetry, range [0,1], TN without effect, negative / non-integer / NaN / Inf / missing
+field rejected, deterministic); experiments/exp044_formal_dice.m (MATLAB, 2026-10-13, 36/36 PASS).
+Output: results/metrics/exp044_formal_dice.csv.
+```
+
+#### Quantitative Results
+
+```text
+        TP     FP      FN     numerator  denominator  Dice
+pn0     2,107  68,771  1,405  4,214      74,390       0.0566473988439306
+pn3     2,013  65,053  1,499  4,026      70,578       0.0570432712743348
+Confusion counts (incl. TN) reproduce EXP-043 exactly. Denominator = predicted positives + GT
+positives in both conditions. Dice reproduces the EXP-042 T2 values (|difference| < 1e-12).
+```
+
+#### Decision
+
+```text
+FORMAL DICE IMPLEMENTED AND VALIDATED. No other metric, no DevelopmentScore, no slice- or
+lesion-wise evaluation, no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 84 - formal IoU / Jaccard implementation (not started).
+```
+
+---
+
+### EXP-045 — Phase-84 formal IoU / Jaccard implementation
+
+#### Pre-registration (written before EXP-045 was run)
+
+```text
+Roadmap phase: 84. Purpose: formal implementation and validation of IoU / Jaccard.
+Prediction: Phase-71 T2 M_pred. Conditions: pn0 / pn3 development only. Held-out: NOT USED.
+GT: BrainWeb crisp label 10, complete 181x217x181 volume.
+Confusion source: computeVoxelConfusion (Phase 82); the IoU function does not count voxels.
+Formula: IoU = TP / (TP + FP + FN) = |M_pred ∩ M_GT| / |M_pred ∪ M_GT|. Terminology: IoU = Jaccard
+index (one function, computeIoUFromConfusion; no duplicate Jaccard function or column). TN not used.
+Zero-union convention (project implementation convention, consistent with Phase 83, not from the
+course material): TP = FP = FN = 0 -> IoU = 1.
+Input validation: TP, FP, FN numeric, scalar, real, finite, non-negative, integer; rejected
+otherwise, never rounded / clamped / replaced.
+Regression: counts = exp043_voxel_confusion_matrix.csv exactly; IoU = Dice / (2 - Dice) with the
+Phase-83 Dice read from exp044_formal_dice.csv, within 1e-12 absolute (numeric regression
+comparison only - not a segmentation, selection or tuning tolerance). The production IoU is
+computed from TP / FP / FN, never converted from Dice.
+Other new metrics: NONE (no precision, recall, specificity, accuracy, F1, volume error, no
+DevelopmentScore, no slice- or lesion-wise evaluation, no figure). No segmentation change, no
+tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeIoUFromConfusion.m; experiments/iou_metric_check.m (synthetic, via
+computeVoxelConfusion -> computeIoUFromConfusion, 16/16 PASS: perfect match 1, disjoint 0,
+TP 2 / FP 1 / FN 3 -> 1/3, empty prediction 0, empty GT 0, both empty 1 (convention), full-positive
+match 1, symmetry, range [0,1], TN independence, negative / non-integer / NaN / Inf / missing field
+rejected, deterministic); experiments/exp045_formal_iou.m (MATLAB, 2026-10-13, 34/34 PASS).
+Output: results/metrics/exp045_formal_iou.csv (column iou = Jaccard index).
+```
+
+#### Quantitative Results
+
+```text
+        TP     FP      FN     intersection  union    IoU (= Jaccard)
+pn0     2,107  68,771  1,405  2,107         72,283   0.0291493158834027
+pn3     2,013  65,053  1,499  2,013         68,565   0.0293590024064756
+Confusion counts (incl. TN) reproduce EXP-043 exactly. IoU = Dice / (2 - Dice) with the Phase-83
+Dice holds in both conditions (|difference| < 1e-12; regression comparison only).
+```
+
+#### Decision
+
+```text
+FORMAL IoU / JACCARD IMPLEMENTED AND VALIDATED. No later metric, no DevelopmentScore, no slice- or
+lesion-wise evaluation, no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 85 - formal Precision implementation (not started).
+```
+
+---
+
+### EXP-046 — Phase-85 formal Precision implementation
+
+#### Pre-registration (written before EXP-046 was run)
+
+```text
+Roadmap phase: 85. Purpose: formal implementation and validation of Precision.
+Prediction: Phase-71 T2 M_pred (Phase-81 decision re-verified). Conditions: pn0 / pn3 development
+only. Held-out: NOT USED. GT: BrainWeb crisp label 10, complete 181x217x181 volume.
+Confusion source: computeVoxelConfusion (Phase 82); the Precision function does not count voxels.
+Formula: Precision = TP / (TP + FP) (TP + FP = predicted-positive voxels); FN and TN not used.
+Zero-prediction convention (project implementation convention for the undefined 0/0 case, not
+from the course material): TP = FP = 0 -> Precision = 1. It only resolves the undefined
+denominator and does NOT imply successful lesion detection (with GT lesions present, Recall in
+Phase 86 would reveal the failure).
+Input validation: TP, FP numeric, scalar, real, finite, non-negative, integer; rejected otherwise.
+Precision is not symmetric in prediction / GT: no symmetry test.
+Regression: counts = exp043_voxel_confusion_matrix.csv exactly; denominator = predicted-positive
+voxels exactly. Precision is not derived from Dice or IoU.
+Other new metrics: NONE (no recall / sensitivity, specificity, accuracy, F1, volume error, no
+DevelopmentScore, no slice- or lesion-wise evaluation, no figure). No segmentation change, no
+tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computePrecisionFromConfusion.m; experiments/precision_metric_check.m (synthetic, via
+computeVoxelConfusion, 16/16 PASS: FP = 0 -> 1, TP = 0 -> 0, TP 3 / FP 1 -> 0.75, TP 2 / FP 2 -> 0.5,
+empty prediction -> 1 (convention), full-positive match 1, FN and TN independence, range [0,1],
+negative / non-integer / NaN / Inf / missing TP / missing FP rejected, deterministic);
+experiments/exp046_formal_precision.m (MATLAB, 2026-10-13, 34/34 PASS, Phase-81 decision
+re-verified). Output: results/metrics/exp046_formal_precision.csv.
+Robustness fix after the run (no effect on results): an explicit isfile check on the Phase-81
+decision file now raises "PHASE 85 TECHNICALLY BLOCKED" before readtable if the file is missing.
+```
+
+#### Quantitative Results
+
+```text
+        TP     FP      predicted positive  Precision           TP share   FP share
+pn0     2,107  68,771  70,878              0.0297271367702249  2.9727 %    97.0273 %
+pn3     2,013  65,053  67,066              0.0300152088986968  3.0015 %    96.9985 %
+Confusion counts (incl. TN) reproduce EXP-043 exactly; denominator = predicted-positive voxels.
+```
+
+#### Interpretation
+
+```text
+Low Precision quantifies the known false-positive contamination: only about 3 % of the voxels
+predicted as lesion are lesion voxels, about 97 % are FP (consistent with the large bright /
+fluid-like candidates documented since Phase 61). Precision says nothing about how much of the GT
+lesion volume is recovered (Recall, Phase 86).
+```
+
+#### Decision
+
+```text
+FORMAL PRECISION IMPLEMENTED AND VALIDATED. No later metric, no DevelopmentScore, no slice- or
+lesion-wise evaluation, no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 86 - formal Recall / Sensitivity implementation (not started).
+```
+
+---
+
+### EXP-047 — Phase-86 formal Recall / Sensitivity implementation
+
+#### Pre-registration (written before EXP-047 was run)
+
+```text
+Roadmap phase: 86. Purpose: formal implementation and validation of Recall / Sensitivity.
+Prediction: Phase-71 T2 M_pred (Phase-81 decision re-verified). Conditions: pn0 / pn3 development
+only. Held-out: NOT USED. GT: BrainWeb crisp label 10, complete 181x217x181 volume.
+Confusion source: computeVoxelConfusion (Phase 82); the Recall function does not count voxels.
+Formula: Recall = TP / (TP + FN) (TP + FN = GT-positive voxels); FP and TN not used.
+Terminology: Recall = Sensitivity (one function computeRecallFromConfusion, one column recall).
+Zero-GT-positive convention (project implementation convention for the undefined 0/0 case, not
+from the course material): TP = FN = 0 -> Recall = 1. It only resolves the undefined denominator
+when the GT has no lesion voxels and does NOT imply good predictions overall (FP would be exposed
+by Precision).
+Input validation: TP, FN numeric, scalar, real, finite, non-negative, integer; rejected otherwise.
+No symmetry test (Recall is not symmetric in prediction / GT).
+Regression: counts = exp043_voxel_confusion_matrix.csv exactly; denominator = GT-positive voxels.
+Interpretation: voxel-wise lesion recovery, not lesion-wise detection; 1 - Recall reported only as
+a plain-language complement (missed fraction of lesion voxels), not a new metric. The Phase-85
+Precision CSV is read only for a side-by-side description; no combined score (F1, F-beta,
+balanced accuracy).
+Other new metrics: NONE (no specificity, accuracy, volume error, DevelopmentScore, slice- or
+lesion-wise evaluation, figure). No segmentation change, no tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeRecallFromConfusion.m; experiments/recall_metric_check.m (synthetic, via
+computeVoxelConfusion, 16/16 PASS: FN = 0 -> 1, TP = 0 -> 0, TP 3 / FN 1 -> 0.75, TP 2 / FN 2 -> 0.5,
+empty GT -> 1 (convention), full-positive match 1, FP and TN independence, range [0,1], negative /
+non-integer / NaN / Inf / missing TP / missing FN rejected, deterministic);
+experiments/exp047_formal_recall.m (MATLAB, 2026-10-13, 34/34 PASS, input files isfile-checked,
+Phase-81 decision re-verified). Output: results/metrics/exp047_formal_recall.csv (column recall =
+Sensitivity).
+```
+
+#### Quantitative Results
+
+```text
+        TP     FN     GT positive  Recall (= Sensitivity)  lesion voxels detected / missed
+pn0     2,107  1,405  3,512        0.5999430523918         59.9943 % / 40.0057 %
+pn3     2,013  1,499  3,512        0.573177676537585       57.3178 % / 42.6822 %
+Confusion counts (incl. TN) reproduce EXP-043 exactly; denominator = GT-positive voxels.
+Side by side with Phase 85 (descriptive, no combined score): Precision 0.0297271367702249 /
+0.0300152088986968.
+```
+
+#### Interpretation
+
+```text
+Voxel-wise: about 60 % (pn0) / 57 % (pn3) of the GT lesion VOXELS are recovered and about
+40 % / 43 % are missed. This is not a lesion-wise detection rate (Phase 93): FN are missed lesion
+voxels, which may belong to partially detected lesions, so no number of missed lesions follows.
+Together with the Phase-85 Precision (about 3 %): low Precision + moderate Recall - the current
+segmentation recovers a substantial fraction of lesion voxels but with very poor selectivity,
+because it also labels a much larger number of non-lesion voxels as lesion.
+```
+
+#### Decision
+
+```text
+FORMAL RECALL / SENSITIVITY IMPLEMENTED AND VALIDATED. Specificity not implemented; no combined
+score, no DevelopmentScore, no slice- or lesion-wise evaluation, no segmentation change, no
+held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 87 - formal Specificity implementation (not started).
+```
+
+---
+
+### EXP-048 — Phase-87 formal Specificity implementation
+
+#### Pre-registration (written before EXP-048 was run)
+
+```text
+Roadmap phase: 87. Purpose: formal implementation and validation of Specificity.
+Prediction: Phase-71 T2 M_pred (Phase-81 decision re-verified). Conditions: pn0 / pn3 development
+only. Held-out: NOT USED. GT: BrainWeb crisp label 10, complete 181x217x181 volume.
+Confusion source: computeVoxelConfusion (Phase 82); the Specificity function does not count voxels.
+Formula: Specificity = TN / (TN + FP) (TN + FP = GT-negative voxels); TP and FN not used.
+Zero-negative-class convention (project implementation convention for the undefined 0/0 case, not
+from the course material): TN = FP = 0 -> Specificity = 1; it does NOT imply a good segmentation.
+Input validation: TN, FP numeric, scalar, real, finite, non-negative, integer; rejected otherwise.
+No symmetry test.
+Regression: counts = exp043_voxel_confusion_matrix.csv exactly; denominator = GT-negative voxels.
+Critical interpretation: the non-lesion class (~7.1 million voxels vs 3,512 lesion voxels)
+dominates the volume, so Specificity must NOT be read in isolation or as overall accuracy; 1 -
+Specificity (FP among GT negatives) is reported only as a plain-language complement. The saved
+Dice / IoU / Precision / Recall CSVs (EXP-044..047) are read only for a descriptive joint summary.
+Other new metrics: NONE (no accuracy, balanced accuracy, F1, F-beta, MCC, ROC / AUC, Youden, volume
+metrics, DevelopmentScore, slice- or lesion-wise evaluation, figure). No segmentation change, no
+tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeSpecificityFromConfusion.m; experiments/specificity_metric_check.m
+(synthetic, via computeVoxelConfusion, 16/16 PASS: FP = 0 -> 1, TN = 0 -> 0, TN 3 / FP 1 -> 0.75,
+TN 2 / FP 2 -> 0.5, no GT negatives -> 1 (convention), all-negative match 1, TP and FN
+independence, range [0,1], negative / non-integer / NaN / Inf / missing TN / missing FP
+rejected, deterministic); experiments/exp048_formal_specificity.m (MATLAB, 2026-10-13, 34/34
+PASS, input files isfile-checked, Phase-81 decision re-verified).
+Output: results/metrics/exp048_formal_specificity.csv.
+```
+
+#### Quantitative Results
+
+```text
+        TN         FP      GT negative  Specificity        negatives rejected / labelled lesion
+pn0     7,036,854  68,771  7,105,625    0.990321611399419  99.0322 % / 0.9678 %
+pn3     7,040,572  65,053  7,105,625    0.990844858826634  99.0845 % / 0.9155 %
+Confusion counts (incl. TN) reproduce EXP-043 exactly; denominator = GT-negative voxels.
+Formal development metrics (read from EXP-044..047 CSVs, descriptive only):
+  pn0  Dice 0.056647 | IoU 0.029149 | Precision 0.029727 | Recall 0.599943 | Specificity 0.990322
+  pn3  Dice 0.057043 | IoU 0.029359 | Precision 0.030015 | Recall 0.573178 | Specificity 0.990845
+```
+
+#### Interpretation
+
+```text
+About 99 % of the GT non-lesion VOXELS are correctly classified as non-lesion. This is not
+"99 % accuracy" and not overall segmentation quality: the negative class has 7,105,625 voxels vs
+3,512 lesion voxels, so 68,771 / 65,053 FP are under 1 % of the negatives while still being about
+33 / 32 times the TP count (68,771 / 2,107 and 65,053 / 2,013, computed afterwards from the
+counts). High Specificity coexists with Precision about 3 %, Dice about 0.057 and IoU about 0.029
+without contradiction: Specificity asks how many true negatives were rejected, Precision how many
+predicted lesion voxels are lesion. Overall pattern: very low Dice / IoU, extremely low Precision,
+moderate Recall, very high Specificity. A high Specificity is no reason to skip tuning.
+```
+
+#### Decision
+
+```text
+FORMAL SPECIFICITY IMPLEMENTED AND VALIDATED. No combined metric (accuracy, balanced accuracy, F1,
+F-beta, MCC, ROC / AUC), no volume metric, no DevelopmentScore, no slice- or lesion-wise
+evaluation, no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 88 - GT lesion volume (not started).
+```
+
+---
+
+### EXP-049 — Phase-88 formal GT lesion volume
+
+#### Pre-registration (written before EXP-049 was run)
+
+```text
+Roadmap phase: 88. Purpose: formal calculation of the physical lesion volume of the BrainWeb GT.
+GT: BrainWeb crisp phantom, M_GT = labels == 10, complete 181x217x181 volume (7,109,137 voxels),
+no mask / ROI / slice selection. One shared GT anatomy: the same GT volume applies to pn0 and pn3
+(noise changes the MRI simulation, not the crisp GT); one result row, not one per condition.
+Voxel spacing: 1 x 1 x 1 mm, established in Phase 26 (notes 13.7.2: download-page step 1 on all
+axes, "1mm isotropic" model; cross-check: GT label counts = published per-class volumes in mm^3).
+config.m has no spacing field; the spacing is passed explicitly in the script with this
+provenance (no config.m change). Physical voxel volume = prod(spacing) = 1 mm^3.
+Formula: V_GT = N_GT * V_voxel (N_GT = nnz(M_GT)). Stored in mm^3; cm^3 = mL = mm^3 / 1000 reported
+only as a unit conversion of the same quantity.
+Function: src/evaluation/computeBinaryMaskVolume.m (generic: logical non-empty mask + explicit
+3-element positive finite spacing; no hidden 1 mm assumption); applied ONLY to M_GT here.
+Regression: N_GT must equal the established 3,512-voxel invariant (expected value only).
+Prediction: NOT USED (no M_pred loaded). Predicted volume, volume error, confusion metrics,
+connected components, slice- or lesion-wise volumes: NOT CALCULATED. Held-out: NOT USED. No
+segmentation change, no tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeBinaryMaskVolume.m; experiments/binary_mask_volume_check.m (synthetic, 14/14
+PASS: 1 voxel -> 1 mm^3, 5 voxels -> 5 mm^3, anisotropic [1 2 3] mm -> 6 mm^3 per voxel and
+24 mm^3 for 4 voxels, all-false mask -> 0, unit conversion, non-logical / empty mask and wrong-
+length / zero / negative / NaN / Inf spacing rejected, deterministic, inputs unchanged);
+experiments/exp049_gt_lesion_volume.m (MATLAB, 2026-10-13, 27/27 PASS).
+Output: results/metrics/exp049_gt_lesion_volume.csv (one row).
+```
+
+#### Quantitative Results
+
+```text
+GT: BrainWeb msles2 crisp phantom, label 10, 181 x 217 x 181 (7,109,137 voxels)
+Spacing 1 x 1 x 1 mm (Phase 26) -> voxel volume 1 mm^3
+GT lesion voxels N_GT = 3,512 (= established invariant)
+V_GT = N_GT * V_voxel = 3,512 mm^3 = 3.512 cm^3 = 3.512 mL
+Same value for pn0 and pn3 (shared crisp GT).
+```
+
+#### Interpretation
+
+```text
+3,512 lesion voxels correspond to 3,512 mm^3 because each voxel occupies 1 mm^3 (validated
+spacing); count and physical volume are distinct quantities that coincide numerically only for
+this geometry.
+```
+
+#### Decision
+
+```text
+GT LESION VOLUME FORMALIZED. No prediction used, no predicted volume, no volume error, no
+connected components, no slice- or lesion-wise volume, no segmentation change, no held-out data,
+config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 89 - predicted lesion volume (not started).
+```
+
+---
+
+### EXP-050 — Phase-89 formal predicted lesion volume
+
+#### Pre-registration (written before EXP-050 was run)
+
+```text
+Roadmap phase: 89. Purpose: formal calculation of the physical volume occupied by the retained
+predicted lesion masks (segmented predicted-positive volume, TP + FP; not true lesion volume).
+Prediction: Phase-71 T2 M_pred, pn0 and pn3 separately (one value per condition; no merge, no
+average, no DevelopmentScore). Dimensions 181x217x181 verified before the volume call.
+Voxel spacing: 1 x 1 x 1 mm (Phase 26, as in Phase 88), passed explicitly; V_voxel = 1 mm^3.
+Formula: V_pred = N_pred * V_voxel with the unchanged Phase-88 function computeBinaryMaskVolume
+(no new volume helper); N_pred also counted independently with nnz.
+Regression: N_pred = TP + FP from exp043_voxel_confusion_matrix.csv (read only; no confusion
+recomputation). EXP-049 CSV checked for existence / spacing provenance only; its GT volume is not
+used in any arithmetic.
+GT: not loaded. Comparison with V_GT, volume difference, ratio or percentage error: NOT
+CALCULATED (Phase 90). Held-out: NOT USED. No segmentation change, no tuning, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+experiments/exp050_predicted_lesion_volume.m (reuses src/evaluation/computeBinaryMaskVolume.m
+unchanged; MATLAB, 2026-10-13, 36/36 PASS: inputs isfile-checked, M_pred variable present,
+logical, 181x217x181 before the volume call, spacing provenance = EXP-049, counts = nnz = function
+voxelCount = EXP-043 TP + FP, unit conversions, Phase-71 files and the volume function unchanged,
+no GT / GT-volume arithmetic / confusion metric / components / held-out reference).
+Output: results/metrics/exp050_predicted_lesion_volume.csv (two rows).
+```
+
+#### Quantitative Results
+
+```text
+Spacing 1 x 1 x 1 mm -> V_voxel = 1 mm^3
+        N_pred (predicted-positive voxels)  V_pred
+pn0     70,878                              70,878 mm^3 = 70.878 cm^3 = 70.878 mL
+pn3     67,066                              67,066 mm^3 = 67.066 cm^3 = 67.066 mL
+N_pred = TP + FP of EXP-043 in both conditions.
+```
+
+#### Interpretation
+
+```text
+V_pred is the physical volume occupied by the prediction (all predicted-positive voxels, TP + FP);
+it is not the true lesion volume. Formal comparison with V_GT is deferred to Phase 90.
+```
+
+#### Decision
+
+```text
+PREDICTED LESION VOLUME FORMALIZED (pn0 and pn3 separately). No GT comparison, no volume error,
+no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 90 - formal volume error (not started).
+```
+
+---
+
+### EXP-051 — Phase-90 formal lesion-volume error
+
+#### Pre-registration (written before EXP-051 was run)
+
+```text
+Roadmap phase: 90. Purpose: formal comparison of the Phase-89 predicted lesion volumes against the
+Phase-88 GT lesion volume.
+Inputs (frozen artifacts only): EXP-049 exp049_gt_lesion_volume.csv (one GT row) and EXP-050
+exp050_predicted_lesion_volume.csv (pn0, pn3). No mask is loaded and no volume is recomputed.
+Canonical unit: mm^3 (gtLesionVolumeMm3, predictedLesionVolumeMm3; same 1 mm^3 voxel geometry).
+Formula (PROJECT_SPEC section 17, unchanged): VolumeErrorPercent = |V_pred - V_GT| / V_GT * 100.
+The formal metric is absolute; signed difference and direction (overestimation /
+underestimation / exact match) are reported separately as description only. Values above 100 %
+are valid and are not clamped. No rounding before the calculation.
+Function: src/evaluation/computeVolumeErrorPercent.m (two scalar, real, finite, non-negative
+volumes; V_GT strictly positive - V_GT = 0 is rejected, no zero-GT convention; V_pred = 0 allowed).
+Results kept per condition (pn0, pn3); no averaging, no DevelopmentScore.
+Interpretation limits: volume error compares total physical volumes only; it is not a spatial-
+overlap, localization, boundary or lesion-wise measure and does not replace Dice / IoU.
+No confusion metric recomputed, no slice- or lesion-wise analysis, no segmentation change, no
+tuning, no held-out data, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeVolumeErrorPercent.m; experiments/volume_error_check.m (synthetic, 16/16 PASS:
+equal volumes 0 %, 125 vs 100 -> +25 / 25 %, 75 vs 100 -> -25 / 25 % (absolute), zero prediction
+-> 100 %, 210 vs 10 -> 2000 % (not capped), mm^3 / cm^3 scale invariance, negative / zero (GT) /
+NaN / Inf / non-scalar inputs rejected, deterministic, inputs unchanged);
+experiments/exp051_formal_volume_error.m (MATLAB, 2026-10-13, 33/33 PASS: EXP-049 one row, label 10,
+3,512 voxels / 3,512 mm^3; EXP-050 rows pn0 / pn3 from Phase-71 T2 M_pred; same spacing and 1 mm^3
+voxel; formula re-checked; no mask loaded, no volume recomputed).
+Output: results/metrics/exp051_formal_volume_error.csv (two rows).
+```
+
+#### Quantitative Results
+
+```text
+V_GT = 3,512 mm^3 (EXP-049)
+        V_pred (mm^3)  signed diff (mm^3)  |diff| (mm^3)  VolumeErrorPercent   direction
+pn0     70,878         +67,366             67,366         1918.16628701595 %   overestimation
+pn3     67,066         +63,554             63,554         1809.62414578588 %   overestimation
+```
+
+#### Interpretation
+
+```text
+The predicted-positive segmented volume is far larger than the physical GT lesion volume in both
+conditions (errors well above 100 %, which is valid for this formula and not clipped). Derived
+afterwards (not formal metrics): |diff| ~ 19.18 / 18.10 x V_GT, i.e. V_pred ~ 20.18 / 19.10 x V_GT. This is
+consistent with the known over-segmentation / FP burden (Precision about 3 %, Recall about
+57-60 %), but volume error is not itself an FP metric: it compares total volumes only and does not
+measure spatial overlap, localization, boundaries or lesion-wise detection (two masks with equal
+volume could be in different places). It does not replace Dice / IoU.
+```
+
+#### Decision
+
+```text
+FORMAL VOLUME ERROR IMPLEMENTED. No masks loaded, no volumes recomputed, no averaging, no
+DevelopmentScore, no segmentation change, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 91 - consolidated complete-3D metrics (not started).
+```
+
+---
+
+### EXP-052 — Phase-91 consolidated complete-volume 3D evaluation
+
+#### Pre-registration (written before EXP-052 was run)
+
+```text
+Roadmap phase: 91. Purpose: consolidate the already formalized complete-volume 3D development
+metrics into one authoritative table (primary development evaluation).
+Prediction: Phase-71 T2 M_pred. Conditions: pn0 / pn3 (kept separate). Scope: complete
+181x217x181 volume (7,109,137 voxels); no slice averages, no selected slices.
+Inputs (read-only, frozen): EXP-043 (TP/FP/FN/TN), EXP-044 (Dice), EXP-045 (IoU), EXP-046
+(Precision), EXP-047 (Recall = Sensitivity, one column), EXP-048 (Specificity), EXP-049 (GT volume,
+one shared row), EXP-050 (predicted volume), EXP-051 (volume error, direction). Each column is
+taken from its own artifact; a missing / inconsistent artifact -> PHASE 91 TECHNICALLY BLOCKED (no
+recovery from masks or documentation).
+New metric: NONE (no metric function called, no masks / MRI loaded, no averaging, no
+DevelopmentScore, no accuracy / F1 / MCC / ROC / AUC / Hausdorff...).
+Consistency checks only (not saved as metrics): counts sum to 7,109,137; TP + FN = GT lesion voxels
+(EXP-049); TP + FP = predicted-positive voxels (EXP-050); volumes consistent with 1 mm^3 voxels;
+EXP-051 uses the EXP-049 / EXP-050 volumes; regression of IoU vs Dice / (2 - Dice), Precision,
+Recall, Specificity and volume error vs the EXP-043 counts / volumes within a representation
+tolerance |a - b| <= 1e-12 * max(1, |b|) (stored-value comparison only; not a tuning, selection or
+near-tie tolerance). Source CSVs must be unchanged after the run.
+Slice-wise (Phase 92), lesion-wise (93), size analysis (94), tuning (95): NOT PERFORMED. Held-out:
+NOT USED. No figures. config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+experiments/exp052_complete_3d_metrics.m (no new function). MATLAB, 2026-10-13: the first run's
+pasted output was truncated at the last check, so the script was rerun (it only reads the
+source CSVs and rewrites the same consolidated CSV); the rerun gives 59/59 PASS: 9 source
+artifacts present, pn0 / pn3 one row each, one shared GT row (label 10), source = Phase-71 T2
+M_pred, dimensions 181x217x181, counts integer and summing to 7,109,137, TP + FN = 3,512 (EXP-049),
+TP + FP = EXP-050 counts, counts identical across EXP-043..048, all metrics finite and in range,
+volumes and volume error consistent across EXP-049..051, regression checks (IoU vs Dice, Precision,
+Recall, Specificity, volume error) within the representation tolerance, no metric function / new
+metric / average / slice loop / components / masks / MRI / held-out, source CSVs unchanged
+(timestamp, size, content), config.m unchanged.
+Output: results/metrics/exp052_complete_3d_metrics.csv (two rows; recall = sensitivity).
+```
+
+#### Quantitative Results (primary complete-volume development results)
+
+```text
+                      pn0                  pn3
+TP / FP / FN / TN     2,107 / 68,771 /      2,013 / 65,053 /
+                      1,405 / 7,036,854     1,499 / 7,040,572
+Dice                  0.0566473988439306   0.0570432712743348
+IoU (Jaccard)         0.0291493158834027   0.0293590024064756
+Precision             0.0297271367702249   0.0300152088986968
+Recall (Sensitivity)  0.5999430523918      0.573177676537585
+Specificity           0.990321611399419    0.990844858826634
+V_GT                  3,512 mm^3           3,512 mm^3
+V_pred                70,878 mm^3          67,066 mm^3
+VolumeErrorPercent    1918.16628701595 %   1809.62414578588 %  (both overestimation)
+```
+
+#### Interpretation
+
+```text
+The retained pipeline recovers a moderate fraction of lesion voxels (Recall about 57-60 %) but
+with a severe false-positive burden: Precision about 3 %, Dice about 0.057, IoU about 0.029, and a
+predicted segmented volume about 20 times the GT lesion volume. Specificity stays about 0.99 only
+because the non-lesion class has ~7.1 million voxels; it is not overall segmentation quality.
+Excessive false-positive segmentation is the dominant development problem (diagnosis only; any
+modification belongs to Phase 95). These are development results, not final test or
+generalization performance. This table is the PRIMARY quantitative development evaluation; the
+Phase-92 slice-wise metrics will be diagnostic only and must not replace it.
+```
+
+#### Decision
+
+```text
+COMPLETE-VOLUME 3D RESULTS CONSOLIDATED (primary development table). No new metric, no averaging,
+no DevelopmentScore, no slice- or lesion-wise analysis, no segmentation change, no tuning, no
+held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 92 - slice-wise diagnostic metrics (not started).
+```
+
+---
+
+### EXP-053 — Phase-92 slice-wise diagnostic evaluation
+
+#### Pre-registration (written before EXP-053 was run)
+
+```text
+Roadmap phase: 92. Purpose: slice-wise DIAGNOSTIC evaluation of the retained Phase-71 T2 M_pred
+(where FP and FN concentrate along the axial volume). The Phase-91 complete-volume table remains
+the PRIMARY result; no slice metric is averaged (no mean / median) or presented as primary.
+Conditions: pn0 / pn3 development only. Axis: axial, dimension 3, all slices k = 1..181
+(39,277 voxels each), none excluded. GT: complete label 10 (no mask, no slice restriction).
+Metrics per slice: GT-positive / predicted-positive counts, TP / FP / FN / TN (computeVoxelConfusion)
+and Dice / IoU / Precision / Recall / Specificity from the existing formal functions (no new
+definitions), via a new helper src/evaluation/computeSliceWiseMetrics.m (no file access, no
+averaging, no components). Flags: hasGtLesion, hasPrediction, hasOverlap and denominator flags
+diceIouInformative (TP+FP+FN>0), precisionInformative (TP+FP>0), recallInformative (TP+FN>0).
+The CSV keeps the formal convention values (e.g. 1 on empty slices); FIGURES ONLY hide metrics with
+an uninformative denominator (NaN). No slice-wise volume error, no new score.
+Regression: summed slice TP / FP / FN / TN = Phase-91 counts exactly; sum GT-positive = 3,512; sum
+predicted-positive = Phase-91 TP + FP.
+Diagnostics: slice-category counts, max / top-5 FP and FN slices (ties: higher count, then lower
+slice index), pn0 / pn3 descriptive comparison. No z cutoff, ROI, slice-specific threshold or
+location rule is derived (no lesion-position leakage). No lesion-wise (Phase 93) or size (94)
+analysis, no tuning (95), no MRI overlays, no held-out data, Phase-71 masks and Phase-91 CSV
+unchanged, config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeSliceWiseMetrics.m; experiments/slice_wise_metrics_check.m (synthetic 5-slice
+volume, 18/18 PASS); experiments/exp053_slice_wise_diagnostics.m (MATLAB, 2026-10-13, 58/58 PASS:
+181 slices per condition, 362 rows, every slice 39,277 voxels and TP+FP+FN+TN = 39,277, summed
+TP / FP / FN / TN = Phase-91 counts exactly, sum GT-positive = 3,512, sum predicted-positive = TP + FP,
+metrics in [0,1], flags consistent, both-empty slices keep the formal conventions, categories
+consistent, deterministic rankings, plotting masks leave values unchanged, no mean / median / score
+/ volume error / components / location rule / held-out, Phase-71 masks, Phase-91 CSV, GT and
+config.m unchanged).
+Outputs: results/metrics/exp053_slice_wise_metrics.csv (362 rows), exp053_slice_diagnostic_summary.csv,
+exp053_slice_top5_rankings.csv, exp053_slice_cross_condition.csv;
+results/figures/exp053_{pn0,pn3}_slice_counts.png, exp053_{pn0,pn3}_slice_metrics.png.
+```
+
+#### Quantitative Results (diagnostic)
+
+```text
+Slice categories (of 181)                 pn0    pn3
+GT-positive slices                         84     84   (first k 33, last k 118; 86 slices in that span)
+prediction-positive slices                121    117   (first k 12 / 28, last k 144; not contiguous)
+both positive                              84     84
+GT-only positive                            0      0
+prediction-only positive                   37     33
+both empty                                 60     64
+slices with TP / FP / FN                44/121/83  43/117/83
+
+Top-5 FP slices (k:voxels)  pn0 92:1698, 93:1629, 94:1591, 95:1532, 82:1516
+                            pn3 93:1650, 94:1561, 95:1490, 83:1478, 82:1465
+Top-5 FN slices             pn0 100:56, 103:55, 102:54, 101:51, 97:46
+                            pn3 103:59, 102:58, 100:57, 99:53, 101:52
+Top-5 TP slices             pn0 102:170, 103:166, 101:138, 104:125, 98:121
+                            pn3 102:166, 103:162, 101:137, 104:119, 97:118
+Cross-condition: FP slices both 117, only pn0 4, only pn3 0; FN slices both 83, only pn0 0,
+only pn3 0.
+Derived afterwards from the CSV (descriptive only; one-off read-only sums of fpVoxels / fnVoxels
+over exp053_slice_wise_metrics.csv, not printed by the script): FP on GT-empty slices 5,299 (7.7 %) / 4,355
+(6.7 %); FP in k 70-104 42,824 (62.3 %) / 41,340 (63.5 %) - window chosen afterwards only to
+describe the figure, not a rule; GT-positive slices with prediction but TP = 0: 40 / 41 (k 33-70
+except 60, and 113/114-118), holding 489 / 517 FN (34.8 % / 34.5 % of all FN); TP > 0 only in
+k 60-113 / 60-112.
+```
+
+#### Interpretation
+
+```text
+1. FP are widespread (121 / 117 of 181 slices) but strongly concentrated in the central volume:
+   a broad plateau around k ~ 70-104 (about 62-64 % of all FP), peaks at k 92-95 and 82-83, and a
+   secondary cluster around k ~ 52-60. Smaller FP tails extend to k 12-50 and 115-144.
+2. 37 / 33 slices are prediction-only (no GT lesion voxels); they carry only ~7-8 % of the FP.
+3. FN concentrate where the GT lesion load is largest (k ~ 97-103). No GT-positive slice is
+   completely without prediction, but in 40 / 41 GT-positive slices (small lesion loads, k 33-70
+   and 113-118) the prediction does not overlap the GT at all (Recall 0), holding about a third of
+   all FN.
+4. Recall on informative slices varies strongly with position (0 at k 33-70 except k 60, up to
+   ~0.8-1.0 around k 80-105); Precision is close to 0 almost everywhere and only reaches ~0.4-0.45
+   around k 103-104.
+5. pn0 and pn3 show the same spatial pattern (same FN slices; pn0 has 4 extra low-k FP slices).
+6. The slice-wise analysis supports the Phase-91 diagnosis: YES - the FP burden dominates and is
+   largest in the central slices where the bright / fluid-like structures were seen in earlier
+   phases (visual association, no anatomical identification).
+Empty-slice warning: on slices without a positive class the formal functions return 1 by project
+convention; the figures hide these values (NaN) and the CSV keeps them with explicit flags.
+No slice metric is averaged; the Phase-91 complete-volume metrics remain PRIMARY. No z cutoff,
+slice-specific threshold or location rule is derived.
+```
+
+#### Decision
+
+```text
+SLICE-WISE DIAGNOSTIC PROFILE ESTABLISHED. No segmentation change, no tuning, no lesion-wise or size
+analysis, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 93 - lesion-wise analysis (not started).
+```
+
+---
+
+### EXP-054 — Phase-93 lesion-wise 3D connected-component analysis
+
+#### Pre-registration (written before EXP-054 was run and before any lesion-wise result was seen)
+
+```text
+Roadmap phase: 93. Purpose: 3D lesion-wise (object-level) matching of the GT and the retained
+prediction components (diagnostic; Phase 91 stays primary, Phase 92 slice-wise).
+Prediction: Phase-71 T2 M_pred. Conditions: pn0 / pn3 development only. GT: complete BrainWeb crisp
+label 10 (no mask, no spatial restriction, no component removed or merged).
+Objects: 26-connected 3D components (bwconncomp on the complete 181x217x181 volumes) for GT and
+prediction - the project's volumetric object definition, already used in Phase 72 (not claimed to
+be taught in the course). No 6 / 18 / 26 comparison, no 2D identity, no slice restrictions from
+Phase 92.
+Matching rule (fixed now): a GT component and a predicted component match iff they share at least
+one voxel (intersectionVoxelCount > 0). No overlap fraction, Dice, centroid / distance, bounding-box
+or size criterion; no one-to-one assignment; many-to-many relations kept.
+Definitions: detected GT lesion (TP-lesion) = GT component with >= 1 matched predicted component;
+missed GT lesion = no match; matched predicted component = >= 1 GT match; false predicted component
+= no GT match. Merge = predicted component with matchedGtCount > 1; split / fragmentation = GT
+component with matchedPredictionCount > 1 (descriptive only, no score).
+Limitation: one shared voxel counts as detection; detection does not imply good delineation. A
+matched predicted component may contain many FP voxels and a detected GT lesion many FN voxels.
+Regression: predicted components = Phase-72 CC3D (count and voxel lists); sum of relation overlaps =
+Phase-91 TP. GT lesion count is determined, not assumed.
+Not done: size filtering / classification (Phase 94), lesion-wise Precision / Recall / F1 / Dice,
+regionprops3, component filtering, segmentation change, tuning, figures, held-out data. Phase-71
+masks, Phase-91 / 92 artifacts and config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/computeLesionWiseMatches.m (bwconncomp + PixelIdxList labels, pairs from shared
+voxels); experiments/lesion_wise_matching_check.m (synthetic, 17/17 PASS: perfect, partial,
+one-voxel, missed, false, merge 2->1, split 1->2, mixed, 26-connected diagonal, partitions, unique
+positive relations, sum of overlaps = TP, deterministic, inputs unchanged, invalid input rejected);
+experiments/exp054_lesion_wise_analysis.m (MATLAB, 2026-10-13, 59/59 PASS: GT components identical
+for pn0 / pn3, exact reconstruction and disjointness of all components, predicted components =
+Phase-72 CC3D (count and voxel lists), sum of overlaps = Phase-91 TP, consistent relation /
+merge / split counts, no one-to-one / distance / size criterion, no filtering, no held-out,
+Phase-71 / 91 / 92 artifacts and config.m unchanged).
+Outputs: results/metrics/exp054_lesion_wise_summary.csv, exp054_gt_lesion_status.csv,
+exp054_predicted_component_status.csv, exp054_lesion_matches.csv.
+```
+
+#### Quantitative Results
+
+```text
+                                          pn0     pn3
+GT lesion components (26-connected)        59      59
+predicted components                      335     291   (= Phase 72)
+detected GT lesions (TP-lesions)           15      14
+missed GT lesions                          44      45
+matched predicted components                4       4
+false predicted components                331     287
+GT lesions matched by > 1 prediction        1       1   (GT lesion 49, 2 predicted components)
+predicted components matching > 1 GT        1       1   (13 / 12 GT lesions)
+match relations                            16      15
+overlap voxels across relations          2,107   2,013 (= Phase-91 TP)
+GT lesions detected in both conditions 14; only pn0 1; only pn3 0.
+Merged component: pn0 #124 / pn3 #92 touches 13 / 12 GT lesions and holds 1,844 / 1,792 overlap
+voxels, i.e. 87.5 % / 89.0 % of all TP. In the Phase-72 table (exp039_components3d.csv, cross-
+reference only) it is the 25,629 / 25,417-voxel component spanning k 68-107, so it also contains
+23,785 / 23,625 FP voxels (34.6 % / 36.3 % of all FP) - derived afterwards from the CSVs. The other
+three matched components hold 14, 72 and 177 (pn0) / 14, 52 and 155 (pn3) overlap voxels.
+```
+
+#### Interpretation
+
+```text
+Under the pre-registered any-overlap criterion only 15 / 14 of the 59 GT lesion objects are
+counted as detected; 44 / 45 are missed. Almost all predicted components (331 / 287, ~99 %) touch
+no GT lesion (98.8 % / 98.6 %). Most of the voxel-level Recall comes from ONE large predicted
+component that is connected to and overlaps 13 / 12 distinct GT lesions (merging them, relative to
+the GT component definition, into one predicted object) - the large central candidate already
+described as bright / fluid-like (Phases 61-72) - which also carries about a third of all FP
+voxels. "Detected" always means detected under the permissive any-overlap criterion; 15/59 is not
+a formal lesion recall. The ~60 % voxel Recall
+therefore does not mean that most lesions are found: few lesion objects are touched, and most of
+the recovered lesion voxels lie in that fused object. The object-level and voxel-level results
+answer different questions: false-component count != FP voxels (matched components can contain
+many FP), missed-lesion count != FN voxels (detected lesions can contain FN), and one shared voxel
+is enough for detection. pn0 and pn3 behave almost identically.
+```
+
+#### Decision
+
+```text
+LESION-WISE OBJECT ANALYSIS ESTABLISHED (diagnostic; Phase 91 remains primary). No size analysis,
+no component filtering, no segmentation change, no tuning, no held-out data, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 94 - small-vs-large lesion analysis (not started).
+```
+
+---
+
+### EXP-055 — Phase-94 small-vs-large GT lesion analysis
+
+#### Pre-registration (written before EXP-055 was run)
+
+```text
+Roadmap phase: 94. Purpose: determine whether the Phase-93 lesion-wise failures depend on GT lesion
+size (diagnostic).
+Lesions: complete 3D 26-connected components of the BrainWeb crisp label-10 GT (same definition as
+Phase 93; IDs from the same bwconncomp enumeration). Size variable: GT component voxel count
+(1 x 1 x 1 mm -> volume in mm^3 reported alongside).
+Threshold: T_size = median of all GT component voxel counts, computed from the GT sizes ONLY (helper
+classifyGtLesionSizes receives sizes only) and frozen BEFORE the Phase-93 detection status is read.
+SMALL: size <= T_size; LARGE: size > T_size; ties at the median stay SMALL (no artificial split).
+Dataset-relative, not a clinical definition. Same sizes / classes for pn0 and pn3.
+Transparency: the Phase-93 detected lesion IDs are already known, but the GT lesion sizes were not
+computed before this phase; the median rule was fixed in the phase prompt, not chosen afterwards.
+If one class is empty -> TECHNICALLY BLOCKED BY SIZE DISTRIBUTION (no alternative threshold).
+Status source: exp054_gt_lesion_status.csv (frozen Phase-93 any-overlap rule; no rematching, no
+connectivity change). Diagnostics: per-lesion GT voxel coverage = totalOverlapVoxels /
+gtLesionVoxels; per class: detected / missed, detection fraction (diagnostic, not "lesion recall"),
+recovered GT voxels / class GT voxels; pn0 / pn3 cross-condition status by class.
+Not done: predicted-component size classes or filtering, lesion-wise Dice / IoU / Precision / Recall
+/ F1, regression / correlation / significance testing, threshold search, segmentation change,
+tuning, held-out data. The median GT size is evaluation-only and never a segmentation or filtering
+threshold. Prior EXP-052 / 053 / 054 artifacts and config.m unchanged.
+```
+
+#### Status
+
+```text
+COMPLETED
+```
+
+#### Implementation / Execution
+
+```text
+src/evaluation/classifyGtLesionSizes.m (sizes only); experiments/lesion_size_classification_check.m
+(synthetic, 13/13 PASS); experiments/exp055_small_vs_large_lesions.m (MATLAB, 2026-10-13, 38/38 PASS:
+GT components (26) reconstruct M_GT, sizes sum to 3,512, median computed from GT sizes only and
+before the status file is read, class rule and ties correct, 59 components = Phase 93, IDs one-to-
+one, Phase-93 status reproduced, overlaps within lesion sizes, coverage in [0,1], missed -> 0,
+detected -> > 0, summed overlap = Phase-91 TP, identical classes pn0 / pn3, no prediction / rematch /
+filtering / lesion-wise metric / model fitting / held-out, prior artifacts, GT and config.m unchanged).
+Outputs: results/metrics/exp055_gt_lesion_size_analysis.csv (118 rows), exp055_size_class_summary.csv,
+exp055_size_cross_condition.csv; results/figures/exp055_small_large_detection_counts.png,
+exp055_lesion_size_vs_gt_coverage.png.
+```
+
+#### Quantitative Results
+
+```text
+59 GT lesions; median size threshold T_size = 7 voxels = 7 mm^3.
+SMALL (<= 7): 31 lesions, sizes 1-7 (median 3), 108 GT voxels in total.
+LARGE (> 7):  28 lesions, sizes 8-927 (median 29), 3,404 GT voxels in total.
+
+            detected / missed  detection fraction  recovered / class GT voxels  coverage
+pn0 SMALL        3 / 28           0.096774               6 / 108              0.055556
+pn0 LARGE       12 / 16           0.428571           2,101 / 3,404             0.617215
+pn3 SMALL        2 / 29           0.064516               5 / 108              0.046296
+pn3 LARGE       12 / 16           0.428571           2,008 / 3,404             0.589894
+
+Cross-condition: SMALL detected both 2, only pn0 1, only pn3 0, missed both 28;
+LARGE detected both 12, only pn0 0, only pn3 0, missed both 16.
+Descriptive (read afterwards from the per-lesion CSV, pn0): the 8 largest GT lesions (155-927
+voxels) are all detected, with coverage 0.49-0.85; of the 20 LARGE lesions with 8-127 voxels,
+16 are missed and the 4 detected ones have coverage 0.03-0.45. This is a description of the
+distribution, not a new threshold.
+```
+
+#### Interpretation
+
+```text
+Lesion size is strongly associated with the failure mode: SMALL lesions are almost always missed
+(detected 3 / 31 and 2 / 31; about 5 % of their voxels covered), while LARGE lesions are detected
+more often (12 / 28) and better covered (about 0.59-0.62). But size explains the lesion-wise
+failure only PARTLY: 16 of the 28 LARGE lesions are missed in both conditions, all in the lower
+part of the LARGE range (8-127 voxels); only the biggest lesions are reliably touched. Missed
+lesions are predominantly SMALL (28 / 44 and 29 / 45), but a substantial share is LARGE. Because
+SMALL lesions hold only 108 of 3,512 GT voxels, they barely affect voxel-level Recall, which is
+dominated by the few big lesions. Interpretation consistent with Phases 63 / 70 (not tested here):
+the per-slice square3 opening removes any isolated structure that cannot contain a 3 x 3 square,
+so lesions of <= 8 voxels can only survive as part of a larger candidate region. pn0 and pn3 show
+the same size pattern (one extra SMALL detection in pn0).
+Warnings: detection requires only one overlapping voxel; GT voxel coverage is a diagnostic support
+quantity, not a new formal metric; SMALL / LARGE are dataset-relative, not clinical; the median GT
+size (7 voxels) is NOT a segmentation or component-filtering threshold.
+```
+
+#### Decision
+
+```text
+SIZE-STRATIFIED LESION DIAGNOSTIC ESTABLISHED: size explains the lesion-wise failure PARTLY. No
+predicted-component filtering, no segmentation change, no tuning, no held-out data, config.m
+unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 95 - development-only tuning (not started).
+```
+
+---
+
+### EXP-056 — Phase-95 development-only final tuning
+
+#### Pre-registration (written before EXP-056 was run; the grid is frozen here)
+
+```text
+Roadmap: Phase 95. Data: pn0 + pn3 only; held-out pn1 / pn5 / pn7 / pn9 untouched. Modality: T2.
+Grid (exactly 24 = 2 x 2 x 3 x 2 configurations, 48 predictions; IDs P?_T?_M?_G?):
+  P0 no filter | P1 Gaussian sigma 0.5, 3x3, replicate, 2D per slice (gaussianFilterSlices)
+  T2 multithresh(T2(brainMask), 2) -> Class 3 | T3 multithresh(T2(brainMask), 3) -> Class 4
+     (thresholds estimated automatically per volume, never modified; generateLesionCandidateMask)
+  M0 none | M1 one 2D axial opening strel('diamond',1) | M2 one 2D axial opening strel('square',3)
+     (imopen per slice, then AND brainMask)
+  G0 none | G1 remove 26-connected 3D components occupying exactly one axial slice (keep
+     occupiedSliceCount >= 2; no voxel-count, size, position or shape criterion)
+Baseline: P0_T2_M2_G0 must reproduce Phase-71 M_pred exactly (pn0, pn3), otherwise TECHNICALLY
+BLOCKED; its Dice must reproduce Phase 91.
+Order: all 48 predictions generated and saved BEFORE the GT is loaded (no GT in generation).
+Selection (Phase 37): complete-volume 3D Dice; DevelopmentScore = (Dice_pn0 + Dice_pn3) / 2; one
+parameter set for both conditions; no near-tie tolerance. Exact-tie order: weaker-condition Dice,
+then simpler configuration = fewer active blocks (P1, T3, M1/M2, G1 each count as one block; M1
+counted as simpler than M2), then configuration ID. The winner's score is necessarily >= the baseline.
+Secondary metrics (IoU, Precision, Recall, Specificity, TP/FP/FN/TN, volumes, volume error),
+lesion-wise (Phase-93 rule) and SMALL / LARGE (Phase-94 grouping) diagnostics: POST-SELECTION ONLY,
+never re-ranking. Declared point: G1 is a component-removal rule like the Phase-69 filter that the
+Phase-70 small-lesion audit rejected; here, by this phase's rule, only DevelopmentScore selects, and
+if the winner uses G1 (or a stronger operation) the GT lesions lost relative to the baseline are
+reported without changing the selection.
+Forbidden: grid extension after results, condition-specific parameters, manual thresholds,
+slice / position rules, the Phase-94 7-voxel value or any GT-derived size in generation, region
+growing, multimodal fusion, local thresholding, refinement around the winner. config.m unchanged;
+the selected configuration is NOT yet frozen (Phase 96).
+```
+
+#### Status
+
+```text
+COMPLETED (selected development configuration; not frozen)
+```
+
+#### Implementation / Execution
+
+```text
+src/segmentation/generatePhase95Prediction.m (P -> T -> M -> G, grid values only, no GT; reuses
+gaussianFilterSlices and generateLesionCandidateMask), src/segmentation/removeSingleSliceComponents3D.m;
+experiments/phase95_prediction_pipeline_check.m (synthetic, 21/21 PASS; its tiny 4-level volume gives
+two multithresh "did not converge" warnings, which do not affect the checks - no such warning on the
+real data); experiments/exp056_development_tuning.m (MATLAB, 2026-10-13, 27/27 PASS: 24 unique
+configurations, 48 predictions saved before GT, all inside the brain mask, baseline P0_T2_M2_G0 =
+Phase-71 M_pred exactly and = Phase-91 Dice, exact-mean scores, rank-1 winner >= baseline, diagnostics
+did not change the winner, no held-out / position / GT-size rule, sources and config.m unchanged).
+Outputs: data/processed/phase95_candidates/exp056_<id>_{pn0,pn3}.mat (48),
+data/processed/phase95_t2_{pn0,pn3}_selected_prediction.mat; results/metrics/exp056_tuning_grid_results.csv
+(48), exp056_tuning_ranking.csv (24), exp056_selected_configuration.csv, exp056_baseline_vs_selected.csv,
+exp056_selected_lesion_diagnostics.csv; results/figures/exp056_tuning_ranking.png,
+exp056_baseline_vs_selected_metrics.png.
+```
+
+#### Quantitative Results
+
+```text
+Ranking (DevelopmentScore; Dice pn0 / pn3):
+ 1 P0_T2_M2_G1 0.058158 (0.058067 / 0.058248)  SELECTED      13 P0_T2_M0_G1 0.041999
+ 2 P0_T2_M2_G0 0.056845 (0.056647 / 0.057043)  baseline      14 P1_T3_M0_G1 0.041922
+ 3 P1_T2_M2_G1 0.056307                                       15 P0_T3_M0_G0 0.041595
+ 4 P0_T2_M1_G1 0.055260                                       16 P0_T2_M0_G0 0.041545
+ 5 P1_T2_M2_G0 0.055001                                       17 P1_T3_M1_G0 0.041505
+ 6 P0_T2_M1_G0 0.053937                                       18 P0_T3_M2_G1 0.041124
+ 7 P1_T2_M1_G1 0.052912                                       19 P1_T3_M0_G0 0.040645
+ 8 P1_T2_M1_G0 0.051610                                       20 P0_T3_M2_G0 0.040594
+ 9 P0_T3_M1_G1 0.044238                                       21 P1_T3_M2_G1 0.039286
+10 P0_T3_M1_G0 0.043397                                       22 P1_T3_M2_G0 0.038531
+11 P0_T3_M0_G1 0.042996                                       23 P1_T2_M0_G1 0.038479
+12 P1_T3_M1_G1 0.042278                                       24 P1_T2_M0_G0 0.038275
+Winner P0_T2_M2_G1: DevelopmentScore 0.058157789028849 vs baseline 0.0568453350591327
+(+0.00131245, +2.3 % relative); weaker-condition Dice 0.058067 (baseline 0.056647). No exact tie.
+
+Baseline -> selected        pn0                       pn3
+Dice                        0.056647 -> 0.058067      0.057043 -> 0.058248
+IoU                         0.029149 -> 0.029902      0.029359 -> 0.029998
+Precision                   0.029727 -> 0.030520      0.030015 -> 0.030695
+Recall                      0.59994  -> 0.59596       0.57318  -> 0.56919
+TP / FP / FN                2,107/68,771/1,405 -> 2,093/66,484/1,419   2,013/65,053/1,499 -> 1,999/63,126/1,513
+predicted voxels            70,878 -> 68,577          67,066 -> 65,125
+volume error                1918.2 % -> 1852.6 %      1809.6 % -> 1754.4 %
+Lesion-wise (post-selection, Phase-93 rule): predicted components 335 -> 165 / 291 -> 143; false
+components 331 -> 162 / 287 -> 140; detected GT lesions 15 -> 14 / 14 -> 13 (SMALL 3 / 2 unchanged,
+LARGE 12 -> 11 in both). Lost in both conditions: GT lesion 16 (31 voxels, LARGE); no lesion gained.
+Cross-reference (Phase-72 table / EXP-054): GT lesion 16 was touched only by predicted component #103
+(pn0) / #78 (pn3), a single-slice component at k 60 with 14 / 15 voxels; G1 removes it, so the 14 TP
+lost per condition are exactly this lesion's overlap.
+```
+
+#### Interpretation
+
+```text
+G1 roughly halves the number of predicted 3D components (about 51 % of them are single-slice) but
+removes only ~2,000 FP voxels (about 3 % of FP), because most FP voxels lie in multi-slice components,
+especially the large central bright / fluid-like one. Dice rises slightly (+0.0013), Recall falls
+slightly (14 TP lost per condition) and the volume overestimation remains about 1750-1850 %: the
+dominant FP problem is only marginally reduced. Descriptive factor pattern across the factorial grid
+(not used for selection): G1 >= G0 in all 12 matched pairs; P1 (Gaussian) < P0 in all 12 matched pairs;
+T3 (N = 3) is worse than T2 whenever an opening is applied (8 / 8 pairs) but slightly better without
+opening (M0, 4 / 4 pairs, all low-ranked); with T2, M2 (square 3) > M1 (diamond 1) > M0 (none). The selected rule removes the only predicted support of GT lesion 16 - the same kind of loss
+that led to the rejection of EXP-036 in Phase 70; by this phase's pre-registered rule it is reported
+but does not change the selection.
+```
+
+#### Decision
+
+```text
+SELECTED DEVELOPMENT CONFIGURATION: P0_T2_M2_G1 = no preprocessing; multithresh N = 2, Class 3; one 2D
+axial square-3 opening; removal of single-slice 26-connected 3D components. Highest DevelopmentScore
+(0.058158), selected by the Phase-37 rule only. NOT yet frozen (Phase 96 not started). No held-out data,
+no grid extension, config.m unchanged.
+```
+
+#### Next Experiment
+
+```text
+Phase 96 - freeze final parameters (not started).
+```
+
+---
+
+### EXP-057 — Phase-95 supplementary development experiment: T1-derived anatomical support
+
+#### Pre-registration (written before EXP-057 was run; reviewed by the user and approved on 2026-10-14)
+
+```text
+Status: FINAL development experiment before Phase 96. Whatever the result, Phase 96 (freeze)
+follows; no EXP-058 or further adjustment.
+Data: T2 + T1, pn0 + pn3 only (T1 pn3 already downloaded); held-out untouched.
+Grid (36 configurations, 72 predictions, IDs S?_T?_M?_G?):
+  T1 partition (per condition, automatic): multithresh(T1norm(EXP-021), 2) -> Class 1 = T1-low
+    candidate, Class 3 = T1-high candidate (terminology: candidates, not certain CSF / WM).
+  S0 = EXP-021
+  S1 = EXP-021 AND NOT T1-low
+  S2 = EXP-021 AND imfill(T1-high, 'holes') per axial slice (default 2D connectivity) AND NOT T1-low
+       ("WM-support envelope"; no component selection, closing or other step)
+  TA = multithresh(T2norm(S), 2), highest class, inside S
+  TB = graythresh(T2norm(S)), voxels > threshold, inside S
+  (the T2 threshold is always re-estimated from the voxels of the selected support)
+  M0 none | M1 one 2D opening diamond 1 | M2 one 2D opening square 3 (then AND S)
+  G0 none | G1 remove 26-connected 3D components occupying one axial slice
+Baseline: S0_TA_M2_G1 must equal the EXP-056 winner P0_T2_M2_G1 voxel by voxel (pn0, pn3),
+  otherwise TECHNICALLY BLOCKED.
+Order: all 72 predictions saved before the GT is loaded.
+Selection: Phase-37 rule only (complete-volume Dice, DevelopmentScore, no tolerance). Exact ties:
+  weaker-condition Dice, then fewer blocks (S1 = 1, S2 = 2, M != 0 = 1, G1 = 1; TA = TB), then ID.
+Rationale (development evidence, declared): T2-bright CSF dominates FP (Phases 61, 92-93; EXP-056
+  G1 removed only ~3 % of FP); in EXP-040, after the square-3 opening, T1 Class 1 held 3 / 7 TP
+  (does not prove that Class 1 is a clean CSF mask). The design is informed by development results;
+  pn0 / pn3 have now been used for several major choices, so part of any gain may be adaptation to
+  them - generalization is judged only by the held-out test.
+Declared failure modes (no post-hoc fix): partial-volume ventricle-border voxels stay T2-bright and
+  outside T1-low; noisy pn3 T1-low may remove some lesion voxels; S2 includes deep GM enclosed by WM;
+  juxtacortical / non-enclosed lesions may fall outside S2; TB inside S1 may split WM / GM.
+Forbidden: any grid extension, erosion / closing of supports, other T1 classes or N, manual
+  thresholds, ventricle-border rules, slice / position rules, GT-derived sizes, EXP-058.
+Post-selection diagnostics only: secondary metrics, lesion-wise (Phase-93 rule), SMALL / LARGE.
+```
+
+#### Results (run 2026-10-14; synthetic check PASS 19/19; main script `experiments/exp057_t1_support_tuning.m` PASS 27/27)
+
+```text
+Baseline reproduction: S0_TA_M2_G1 = EXP-056 winner P0_T2_M2_G1 voxel by voxel (pn0, pn3);
+  DevelopmentScore 0.058157789028849 reproduced.
+T1 partition (automatic, per condition):
+  pn0 thresholds 0.34051 / 0.48969; pn3 thresholds 0.31614 / 0.45629
+  (exact T1-low / T1-high counts in exp057_support_summary.csv)
+  Support sizes (voxels, CSV): S0 1,688,787 / 1,668,366; S1 1,531,677 / 1,523,572; S2 713,108 / 712,948
+  GT voxels inside the support (evaluation only, read after selection): S0 3512 / 3512,
+  S1 3508 / 3502, S2 3114 / 3058 -> S2 caps voxel Recall at 0.8867 / 0.8707.
+Ranking (Phase-37 rule, no ties at the top):
+  1 S2_TA_M2_G1  Dice 0.661039 / 0.539029  DevelopmentScore 0.600033865204608  (+0.541876)
+  2 S2_TA_M2_G0  0.656351 / 0.503559  0.57996
+  3 S2_TA_M1_G1  0.666253 / 0.440976  0.55361   (best pn0 Dice; weaker on pn3)
+  5 S1_TA_M2_G1  0.433163 / 0.370416  0.40179   (best S1)
+  15 S0_TA_M2_G1 0.058067 / 0.058248  0.058158  (EXP-056 winner, reproduced)
+  All TA configurations in S2 with an opening rank 1-4; every TB configuration in S1 ranks last
+  (Dice < 0.011: graythresh inside S1 selects a large fraction of the support, e.g. 834,259 voxels).
+SELECTED (development, not frozen): S2_TA_M2_G1
+  pn0: TP 2310, FP 1167, FN 1202; Precision 0.664366, Recall 0.657745, IoU 0.493695,
+       Specificity 0.999836, V_pred 3477 mm3, volume error 0.997 %
+  pn3: TP 2448, FP 3123, FN 1064; Precision 0.439418, Recall 0.697039, IoU 0.368953,
+       Specificity 0.999560, V_pred 5571 mm3, volume error 58.63 %
+  vs EXP-056 winner: FP 66,484 -> 1,167 (-98.2 %) / 63,126 -> 3,123 (-95.1 %); TP +217 / +449.
+FN decomposition of the selected configuration (from the grid CSV):
+  pn0 FN 1202 = 398 GT voxels outside S2 + 804 inside S2 removed by opening + G1
+       (S2_TA_M0_G0 already has TP 3114 = all GT voxels inside S2)
+  pn3 FN 1064 = 454 outside S2 + 610 removed by opening + G1 (S2_TA_M0_G0 TP 3058)
+Lesion-wise (Phase-93 rule, 26-connected, any overlap):
+  pn0 detected 19 / 59 (EXP-056 winner 14); false predicted components 0 of 20 (was 162 of 165)
+  pn3 detected 28 / 59 (13); false predicted components 17 of 45 (was 140 of 143)
+  SMALL detected 2 / 6 (EXP-056 winner 3 / 2); LARGE 17 / 22 (11 / 11)
+  Lost vs EXP-056 winner: pn0 [21 33 44 47], pn3 [33 37 44 47]; in the Phase-94 baseline record
+  these matches relied on 1-3 overlapping voxels. Newly detected: 9 (pn0), 19 (pn3).
+Figures: exp057_supports.png (GT-free), exp057_tuning_ranking.png, exp057_exp056winner_vs_selected.png
+```
+
+#### Interpretation
+
+- The hypothesis is supported on the development data. Restricting the T2 threshold to the T1-derived envelope S2 removes most of the T2-bright fluid-like false positives. The re-estimated multithresh threshold inside S2 then separates the lesion candidates from the enclosed tissue.
+- In pn0, within S2, the TA candidate before morphology already contains every GT voxel of S2. The remaining FN come from two sources: GT voxels outside S2 (11.3 % / 12.9 % of GT, consistent with the declared juxtacortical / non-enclosed failure mode) and the square-3 opening + G1, which remove thin lesion voxels.
+- The two conditions differ more than before: pn3 has 2.7× the FP of pn0 and a lower TA threshold inside S2 (0.5182 vs 0.6112). This suggests a sensitivity to noise that the held-out conditions pn5 / pn7 / pn9 (more noise) may amplify. This is a risk, not a measured result.
+- Caveats on generalization:
+  - BrainWeb is a simulation with near-piecewise-constant tissue intensities and no bias field in rf0, which favors an automatic T1 three-class partition.
+  - The design was chosen after several development results on pn0 / pn3 (declared in the pre-registration).
+  - Selecting among 36 configurations adds optimism, although small relative to the gap between rank 1 and the baseline.
+- No fix was applied after reading the results: the selection follows the pre-registered rule.
+
+#### Conclusion
+
+```text
+SELECTED DEVELOPMENT CONFIGURATION S2_TA_M2_G1 (DevelopmentScore 0.600034 vs 0.058158).
+Final development experiment: no EXP-058. Not yet frozen; next: Phase 96 (freeze), then held-out test.
+Files: data/processed/phase95_exp057_t2_{pn0,pn3}_selected_prediction.mat;
+  results/metrics/exp057_{support_summary,tuning_grid_results,tuning_ranking,selected_configuration,
+  exp056winner_vs_selected,selected_lesion_diagnostics}.csv
+```
+
+#### v1 freeze record (2026-10-14, before any EXP-058 work)
+
+```text
+v1 = EXP-057 selected configuration S2_TA_M2_G1, FROZEN as a development snapshot.
+Pipeline (no parameter may change):
+  T1, T2 -> double -> /4095 (no filter)
+  brain support: EXP-021 mask (frozen, exp021_t1_{pn0,pn3}_3d_erode_select_dilate_candidate.mat)
+  T1 partition: levels = multithresh(T1norm(EXP-021), 2); T1-low = class 1, T1-high = class 3
+  S2 = EXP-021 AND imfill(T1-high, 'holes') per axial slice (default 2D connectivity) AND NOT T1-low
+  candidate = S2 AND T2norm in highest class of multithresh(T2norm(S2), 2)
+  one 2D axial opening strel('square', 3) per slice, then AND S2
+  remove 26-connected 3D components occupying a single axial slice
+Code: src/segmentation/computeT1AnatomicalSupport.m, generateExp057Prediction.m,
+  generateLesionCandidateMask.m, removeSingleSliceComponents3D.m;
+  experiments/exp057_t1_support_tuning.m (regenerates the predictions).
+Development scores: Dice 0.661038775218200 (pn0) / 0.539028955191016 (pn3);
+  DevelopmentScore 0.600033865204608. Predicted voxels 3,477 / 5,571.
+Artifacts (SHA-256 of the saved files; a regeneration writes a new MAT header, so identity is
+  then checked on the M_pred content with isequal, not on the file hash):
+  data/processed/phase95_exp057_t2_pn0_selected_prediction.mat
+    12147984BACB7F94BAC288F89109BF605877AEFE8611C02115BECE81E44FEB9D
+  data/processed/phase95_exp057_t2_pn3_selected_prediction.mat
+    AFDE41B5EC35B89ED25ED9E95D53560021D27E19F5335FDDBAFE58B887603B57
+Version control: Git commit "fase 96a" + tag v1-frozen.
+Held-out pn1 / pn5 / pn7 / pn9: NOT accessed, NOT downloaded.
+```
+
+### Protocol amendment A1 (2026-10-14): development reopened for one experiment (EXP-058)
+
+```text
+Original commitment: EXP-057 was pre-registered as the FINAL development experiment ("no EXP-058").
+That statement is NOT rewritten; this amendment supersedes it, decided by the user after reading
+the EXP-057 results.
+Reason: EXP-057 changed the method from a non-working to a working segmentation (DevelopmentScore
+  0.058 -> 0.600) and quantified specific residual margins: voxels removed by the opening
+  (804 / 610 lesion voxels), lesion voxels outside S2 (398 / 454), pn3 noise (2.7x the FP of pn0).
+Rules:
+  1. v1 (S2_TA_M2_G1) is frozen BEFORE EXP-058 (record above) and is never modified.
+  2. EXP-058 (v2) = exactly ONE pre-registered development experiment on pn0 + pn3 only. Its base
+     configuration must reproduce v1 voxel by voxel. No EXP-059 afterwards.
+  3. Primary version for the final test, fixed BEFORE any held-out access:
+       primary = v2 if DevelopmentScore(v2) > DevelopmentScore(v1) (strict, Phase-37 rule),
+       otherwise primary = v1; the other version is reported as secondary.
+  4. Phase 96: freeze primary + secondary. Only then download pn1 / pn5 / pn7 / pn9; Phase 97
+     evaluates BOTH. Held-out results cannot change which version is primary.
+  5. No diagnostic using the GT is run to decide the structure of the EXP-058 grid.
+Declared cost: pn0 / pn3 are used for one more design choice; part of any v2 gain may be
+  adaptation to them. The held-out test judges generalization.
 ```

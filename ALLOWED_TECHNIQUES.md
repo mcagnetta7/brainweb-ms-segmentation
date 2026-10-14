@@ -185,6 +185,22 @@ The choice of filter must depend on the observed noise characteristics.
 
 ---
 
+### 4.4 Anisotropic Diffusion Filtering (narrow project exception, EXP-058)
+
+Allowed **only** as the anisotropic-filter level of the pre-registered EXP-058 grid. Approved by the user on 2026-10-14.
+
+- **Course status:** the course material names anisotropic filters as a class of non-linear filters, without an operative treatment comparable to Gaussian or median filtering. EXP-003 (notes §13.24) had excluded them for that reason. Their use here is a documented project exception, like the 3D extension of EXP-021.
+- **Implementation:** MATLAB `imdiffusefilt` (Perona–Malik diffusion, introduced in R2018a), applied in 2D to each axial slice.
+- **Parameters:** the MATLAB defaults only, with no tuning and no variants:
+  - `NumberOfIterations` 5;
+  - `ConductionMethod` "exponential";
+  - `Connectivity` "maximal";
+  - `GradientThreshold` = the documented default, "10 % of the dynamic range of the image".
+- **Rationale:** smooth noise in uniform regions while limiting blur across edges, which matters for lesions of a few voxels.
+- **Not allowed:** other diffusion parameters, bilateral filtering, non-local means or other edge-preserving filters.
+
+---
+
 ## 5. Thresholding
 
 Thresholding is one of the main segmentation approaches covered by the course and represents the initial segmentation family for this project.
@@ -679,6 +695,14 @@ Watershed segmentation
 ```
 
 They require an explicit experimental justification before being incorporated into the final pipeline.
+
+Project-status note (Phase 95, EXP-057, approved by the user): T1 is used as an anatomical support for the T2 lesion segmentation. Its role is analogous to the T1-derived brain mask of Phase 50.
+- The T1 volume inside EXP-021 is partitioned automatically with `multithresh` (N = 2).
+- The lowest class is excluded, and the highest class is hole-filled per axial slice with `imfill(..., 'holes')`. Both are allowed operations (Sections 5 and 6).
+- The T2 threshold is then re-estimated inside that support.
+- Only allowed techniques and elementwise logic are used. There is no learning and no GT-derived value, and this use is limited to the EXP-057 grid.
+
+Project-status note (Phase 95, EXP-056): the pre-registered tuning grid includes, as one option, removing predicted 26-connected 3D components that occupy exactly one axial slice (keep components spanning ≥ 2 slices). It reuses the allowed connected-component machinery (Section 7) with the project's 3D object definition (Phase 72). It is a generic continuity rule on the predicted object only: no voxel-count, size, position or shape criterion, and nothing derived from the GT. It is used only inside the EXP-056 grid.
 
 Project-status note (Phase 80, EXP-041): the first multimodal experiment combines two already generated binary candidate masks with one deterministic logical intersection (`M_T2 AND M_PD`), as required by `PROJECT_SPEC.md` §15 (explicit, deterministic fusion rule). This is the same elementwise logical operation already used to restrict candidates to the brain mask. It introduces no new image-processing technique, no machine learning and no learned or weighted combination.
 
