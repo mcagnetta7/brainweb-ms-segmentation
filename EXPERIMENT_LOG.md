@@ -10311,3 +10311,11 @@ Held-out: NOT downloaded, NOT accessed. config.m unchanged. No new experiment id
 Version control: commit "fase 96" + tag v3-final-frozen - pending user approval. No push.
 Next: Phase 97 - held-out final test (primary v3; secondary locked comparisons v2, v1).
 ```
+
+```text
+PHASE 96 COMPLETE (2026-10-16): freeze commit 96b16124999a0d40f8df2c66b072fb3a38f10322
+  ("fase 96: freeze final v3 pipeline", approved explicitly by the user); annotated tag
+  v3-final-frozen -> that commit; post-commit: manifest 26/26 valid, no held-out file in the tree or
+  data/raw, primary v3 / D3_M1_G0, working tree clean. No push. Held-out still NOT accessed.
+READY FOR PHASE 97 - HELD-OUT FINAL TEST.
+```

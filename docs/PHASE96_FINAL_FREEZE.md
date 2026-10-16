@@ -11,7 +11,7 @@
 | Selection criterion | Phase-37 DevelopmentScore = (Dice_pn0 + Dice_pn3) / 2, complete-volume 3D Dice, no tolerance |
 | Primary designation | **made before any held-out access**. Held-out results cannot change it. |
 | Held-out (`pn1`, `pn5`, `pn7`, `pn9`) | not downloaded, not accessed |
-| Freeze status | READY TO FREEZE — commit and tag pending user approval (see the end of this file) |
+| Freeze status | **PHASE 96 COMPLETE** — frozen in version control on 2026-10-16 (see §7) |
 
 ## 1. Development reference (in-sample, NOT a test result)
 
@@ -83,7 +83,7 @@ RAW T1 + RAW T2 (BrainWeb .raws, uint16 little-endian, 0..4095, 181 x 217 x 181,
 |---|---|---|---:|---|---|
 | v1 | EXP-057 | S2_TA_M2_G1 | 0.600034 | secondary locked version | `v1-frozen` |
 | v2 | EXP-058 | F5_R0 | 0.661169 | secondary locked version | `v2-frozen` |
-| **v3** | **EXP-059** | **D3_M1_G0** | **0.689892** | **PRIMARY** | `v3-final-frozen` (pending) |
+| **v3** | **EXP-059** | **D3_M1_G0** | **0.689892** | **PRIMARY** | `v3-final-frozen` |
 
 If v1 or v2 score higher than v3 on some held-out condition, this is reported, but the primary designation does not change. Adopting another version would require confirmation on new independent data (amendment A2).
 
@@ -112,7 +112,16 @@ Files in `data/processed/` and `results/metrics/` are excluded from Git, so the 
 
 | Item | Value |
 |---|---|
-| Commit message | `fase 96` |
-| Tag | `v3-final-frozen` |
-| Commit hash | pending user approval |
-| Push | none |
+| Commit message | `fase 96: freeze final v3 pipeline` (approved explicitly by the user) |
+| Freeze commit | `96b16124999a0d40f8df2c66b072fb3a38f10322` |
+| Tag | `v3-final-frozen` (annotated), resolves to the freeze commit above |
+| Push | none (local only) |
+
+**Post-commit verification:**
+- `v3-final-frozen` resolves to `96b1612…`;
+- 26 / 26 manifest hashes are still valid;
+- no held-out file in the commit tree or in `data/raw`;
+- the primary remains v3 / D3_M1_G0;
+- the working tree was clean.
+
+This section was filled in by a later documentation-only commit; the tag stays on the freeze commit. After the tag, **no line of the pipeline is changed in response to held-out results**.
