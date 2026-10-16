@@ -866,7 +866,30 @@ This rule is defined before any parameter optimization. It applies to every late
   - R: none / morphological reconstruction inside S2 / towards S1.
 - **Winner = v2 = `F5_R0`** (anisotropic diffusion of T2, no recovery). DevelopmentScore 0.661169 (Dice 0.669340 / 0.653000).
 - **Primary for the final test:** v2; **secondary:** v1. This was fixed before any held-out access, and both versions are tested in Phase 97.
-- **Status:** v2 not yet frozen (Phase 96). No further development experiments.
+- **Status:** frozen as **v2** (tag `v2-frozen`).
+
+**Protocol amendment A2 and EXP-059 (v3):** the final development experiment before the test.
+- **Grid:** 12 configurations on top of v2:
+  - D: 2D slice-wise / 3D whole-volume anisotropic diffusion of T2;
+  - M: no opening / diamond 1 / square 3;
+  - G: none / single-slice component removal.
+- **Winner = v3 = `D3_M1_G0`.** DevelopmentScore 0.689892 (Dice 0.68538 / 0.69440).
+- **Primary for the final test:** v3; v2 and v1 are secondary locked versions. This was fixed before any held-out access.
+- **Status:** Phase 95 COMPLETE.
+
+**Phase 96 (final freeze):** v3 = `D3_M1_G0` is frozen as the final primary pipeline. It was selected on development data only, before any held-out access.
+- **Frozen parameter set:** `src/segmentation/finalSegmentationConfig.m`. **Entry point:** `src/segmentation/generateFinalPrediction.m` (raw T1 + T2).
+- **Pipeline:**
+  1. fixed normalization 0..4095 → 0..1;
+  2. EXP-021 brain mask from the condition's own T1;
+  3. S2 from the unfiltered T1;
+  4. whole-volume 3D anisotropic diffusion of T2 (5 iterations, exponential, 26-neighbour, gradient threshold 0.10 × volume range);
+  5. TA = `multithresh(T2f(S2), 2)`, highest class;
+  6. one 2D axial `diamond 1` opening AND S2;
+  7. no component filter, recovery or region growing.
+- **Regression:** the entry point reproduces the EXP-059 predictions voxel by voxel (Phase-96 check 39/39). SHA-256 manifest of 26 artifacts. Full record: `docs/PHASE96_FINAL_FREEZE.md`.
+- **Held-out:** not yet accessed. Phase 97 evaluates v3 (primary) plus v2 and v1 (secondary locked versions). It measures robustness to unseen simulated noise on the same msles2 phantom, not independent-patient generalization.
+- **Unchanged rules:** GT is never a segmentation input; `pn0`/`pn3` are development; `pn1`/`pn5`/`pn7`/`pn9` are held-out; no held-out result may change the frozen pipeline.
 
 **Data:**
 

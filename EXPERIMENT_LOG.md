@@ -652,7 +652,8 @@ Maintain this table as experiments are completed.
 | EXP-055 | Small-vs-large GT lesion analysis, median split 7 voxels (Phase 94) | EXP-054 status + GT component sizes | None (size-stratified diagnostic) | n/a | n/a | n/a | n/a | n/a | SMALL detected 3/31, 2/31; LARGE 12/28 both; size explains failure PARTLY |
 | EXP-056 | Development-only tuning, 24-configuration grid P x T x M x G (Phase 95) | T2 pn0 + pn3, GT label 10 after all predictions | Gaussian / multithresh N / opening / single-slice 3D component removal | 0.058067 | 0.058248 | 0.058158 | 0.030520 / 0.030695 | 0.59596 / 0.56919 | SELECTED P0_T2_M2_G1 (+0.00131 vs baseline); superseded by EXP-057 |
 | EXP-057 | Final development experiment: T1-derived anatomical support, 36-configuration grid S x T x M x G (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Support S0/S1/S2 / T2 threshold TA/TB inside support / opening / single-slice 3D component removal | 0.661039 | 0.539029 | 0.600034 | 0.664366 / 0.439418 | 0.657745 / 0.697039 | SELECTED S2_TA_M2_G1 (+0.5419 vs EXP-056 winner); frozen as v1 (tag v1-frozen) |
-| EXP-058 | v2 under amendment A1: noise filter (Gaussian / anisotropic on T1 / T2) x extent recovery (morphological reconstruction), 21 configurations (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Filter F0-F6 / recovery R0-R2 on the frozen v1 | 0.669340 | 0.653000 | 0.661169 | 0.69969 / 0.71193 | 0.64151 / 0.60308 | SELECTED F5_R0 (anisotropic T2, +0.0611 vs v1) = v2 PRIMARY, v1 secondary; R1/R2 rejected; not yet frozen |
+| EXP-058 | v2 under amendment A1: noise filter (Gaussian / anisotropic on T1 / T2) x extent recovery (morphological reconstruction), 21 configurations (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Filter F0-F6 / recovery R0-R2 on the frozen v1 | 0.669340 | 0.653000 | 0.661169 | 0.69969 / 0.71193 | 0.64151 / 0.60308 | SELECTED F5_R0 (anisotropic T2, +0.0611 vs v1) = v2; R1/R2 rejected; frozen (tag v2-frozen) |
+| EXP-059 | v3 under amendment A2: 2D/3D anisotropic diffusion x opening x component rule, 12 configurations (Phase 95) | T2 + T1 pn0 + pn3, GT label 10 after all predictions | Diffusion D2/D3 / opening none, diamond 1, square 3 / G0/G1 on the frozen v2 | 0.68538 | 0.69440 | 0.689892 | 0.64584 / 0.69263 | 0.73007 / 0.69618 | SELECTED D3_M1_G0 = v3 PRIMARY (+0.0287 vs v2); v2, v1 secondary; not yet frozen |
 
 Preprocessing experiments without segmentation use `n/a` for the segmentation metrics.
 
@@ -946,7 +947,13 @@ Roadmap integration milestones (not experiments):
   - Dice 0.669340 / 0.653000, DevelopmentScore 0.661169 vs 0.600034. The pn3 FP fall from 3,123 to 857.
   - Trade-off: pn3 lesion detection 28 → 16 (SMALL 6 → 1), Recall 0.697 → 0.603.
   - The morphological reconstruction R1/R2 is rejected (it restores connected FP; R2 leaks into S1).
-  - Development CLOSED (no EXP-059). Next: Phase 96 freeze of v2 + v1.
+  - Frozen as v2 (tag `v2-frozen`).
+- Protocol amendment A2 (2026-10-14): EXP-059 is the final development experiment before the test; mandatory freeze afterwards; held-out cannot modify the frozen pipeline.
+- EXP-059 (amendment A2, 12 configurations, 24 predictions before GT; synthetic 13/13, main 27/27): **SELECTED D3_M1_G0 = v3, PRIMARY; v2 and v1 secondary locked versions**.
+  - The v2 base with 3D whole-volume anisotropic diffusion of T2 and a diamond-1 opening, without component filter.
+  - Dice 0.68538 / 0.69440, DevelopmentScore 0.689892 vs 0.661169.
+  - GT lesions detected 33 / 31 of 59 (v2 18 / 16); FP 1,406 / 1,085.
+  - Next: Phase 96 freeze of v3, then the held-out test.
 
 Code debugging, syntax fixes and checks that a MATLAB function works are not experiments and are not recorded in this log.
 
@@ -10169,4 +10176,138 @@ Rules:
 Declared cost: pn0 / pn3 have now guided many decisions; every development score (0.661 and the
   EXP-059 result) is in-sample and optimistic by construction. The held-out result is the
   relevant measure.
+```
+
+---
+
+### EXP-059 — v3 development experiment under amendment A2: 3D diffusion and morphology on the v2 base
+
+#### Pre-registration (written before EXP-059 was run; reviewed by the user and approved on 2026-10-14)
+
+```text
+Status: FINAL development experiment before the held-out test (amendment A2). After EXP-059 the
+  selected primary pipeline is mandatorily frozen before any held-out data are accessed.
+Frozen base: v2 = F5_R0 from EXP-058.
+Data: T1 + T2, pn0 + pn3; held-out not accessed. T1 not filtered; T1 partition, S2 and EXP-021
+  unchanged from v2. TA (multithresh N = 2, highest class) re-estimated inside S2 on the filtered T2.
+Factor D (anisotropic diffusion of T2 after /4095, explicit frozen parameters; range-checked and
+  clipped to [0,1] as in EXP-058):
+  D2  per axial slice: GradientThreshold_k = 0.10 x (max - min) of slice k, Connectivity "maximal"
+      (8-neighbour), 5 iterations, exponential; constant slices unchanged (= v2)
+  D3  whole 181 x 217 x 181 volume: GradientThreshold = 0.10 x (max - min) of the volume,
+      Connectivity "maximal" (26-neighbour), 5 iterations, exponential
+  D2 and D3 share the same relative rule, not the same numeric threshold: the comparison studies
+  the natural 2D -> 3D extension of the filter, not an ablation of connectivity alone.
+Factor M (after TA inside S2; one 2D axial opening per slice, then AND S2):
+  M0 none | M1 strel('diamond', 1) | M2 strel('square', 3) (= v2)
+Factor G: G0 none | G1 remove 26-connected 3D components occupying one axial slice (= v2)
+Grid: 2 x 3 x 2 = 12 configurations, 24 predictions, IDs D?_M?_G?; all saved before the GT is loaded.
+Base check: D2_M2_G1 must equal the frozen v2 prediction voxel by voxel (pn0, pn3), otherwise
+  TECHNICALLY BLOCKED.
+Selection: Phase-37 rule (complete-volume Dice, DevelopmentScore, no tolerance). Exact ties:
+  weaker-condition Dice, then complexityPenalty relative to v2 (D2 = 0, D3 = 1; M0 = 0, M1 = 1,
+  M2 = 1; G0 = 0, G1 = 1), then ID.
+Primary (A2): the v2 DevelopmentScore is read from results/metrics/exp058_selected_configuration.csv
+  and verified against 0.66116938387951. v3 = winner only if winner != D2_M2_G1 and its
+  DevelopmentScore is strictly higher than v2's; otherwise v2 stays primary.
+Rationale (development evidence, declared): in EXP-057 the lighter opening (M1) lost on pn3 because
+  of noise; EXP-058 showed that filtering T2 was the effective robustness block, so the morphology
+  selected on the noisier T2 is re-evaluated. v2 detects few SMALL lesions (2 / 1). Voxels are
+  isotropic 1 mm, so 3D diffusion can use adjacent slices.
+Declared failure modes (no post-hoc fix):
+  - M0 / M1 may let residual noise or thin bright structures through and raise FP again;
+  - with 26 neighbours and a gradient threshold relative to the whole-volume range (which can be
+    larger than the slice-wise thresholds), the diffusion may be less conservative at edges and
+    increase the risk of smoothing small lesions (depends on the numerical implementation);
+  - the gain may be small or absent.
+Structural limitation (declared, not addressed): lesions entirely outside S2 cannot be recovered by
+  any later step (Recall cap 0.887 / 0.871 in EXP-057).
+Forbidden: support changes, lesion recovery, search outside S2, other filter parameters or
+  families, T1 filtering, held-out data.
+Post-selection diagnostics only (do not change the winner or the primary): secondary metrics,
+  lesion-wise (Phase-93 rule), SMALL / LARGE, lesions lost / gained vs v2.
+```
+
+#### Results (run 2026-10-14; synthetic check PASS 13/13; main script `experiments/exp059_v3_tuning.m` PASS 27/27)
+
+```text
+Base check: D2_M2_G1 = frozen v2 voxel by voxel (pn0, pn3); v2 DevelopmentScore read from the
+  artifact and verified (deltaVsV2 = 1.1e-16 for the base is CSV rounding, as in EXP-058; harmless).
+Ranking (Phase-37 rule):
+  1 D3_M1_G0  Dice 0.68538 / 0.69440  DevelopmentScore 0.689891619845975 (+0.028722 vs v2)
+  2 D3_M1_G1  0.68595 / 0.69061  0.68828
+  3 D2_M1_G1  0.67788 / 0.67618  0.67703
+  4 D2_M1_G0  0.67386 / 0.67365  0.67375
+  5 D3_M2_G1  0.66657 / 0.65854  0.66255
+  6 D3_M2_G0  0.66627 / 0.65637  0.66132
+  7 D2_M2_G1  frozen v2  0.66934 / 0.65300  0.66117
+  8 D2_M2_G0  0.66326 / 0.64384  0.65355
+  9-12 M0 configurations: 0.551 - 0.568 (FP 3,754 - 4,768)
+  Pattern: for each D and G, M1 > M2 > M0; for each M and G, D3 > D2 (all 6 pairs).
+  Margin of the winner over rank 2: 0.0016 (G0 vs G1).
+WINNER: D3_M1_G0. PRIMARY VERSION FOR THE FINAL TEST (amendment A2): v3 = D3_M1_G0.
+v2 vs v3 (complete volume):
+  pn0: Dice 0.66934 -> 0.68538; Precision 0.69969 -> 0.64584; Recall 0.64151 -> 0.73007;
+       TP 2253 -> 2564, FP 967 -> 1406, FN 1259 -> 948; volume error 8.31 % -> 13.04 %
+  pn3: Dice 0.65300 -> 0.69440; Precision 0.71193 -> 0.69263; Recall 0.60308 -> 0.69618;
+       TP 2118 -> 2445, FP 857 -> 1085, FN 1394 -> 1067; volume error 15.29 % -> 0.51 %
+  TA_S2 (normalized): pn0 0.6160 -> 0.6156; pn3 0.5630 -> 0.5654
+Lesion-wise (Phase-93 rule):
+  pn0: detected 18 -> 33 of 59; false components 0 -> 10 (of 43); SMALL 2 -> 6, LARGE 16 -> 27;
+       lost [12], gained 16 lesions
+  pn3: detected 16 -> 31; false components 1 -> 7 (of 41); SMALL 1 -> 5, LARGE 15 -> 26;
+       lost [17], gained 16 lesions
+Synthetic INFO: on the clean phantom diamond 1 keeps fewer voxels than square 3 (25 vs 45) because
+  opening a 3x3 square with a cross removes its corners; phantom geometry only.
+Figures: exp059_diffusion_2d_vs_3d.png (GT-free), exp059_tuning_ranking.png, exp059_v2_vs_winner.png
+```
+
+#### Interpretation
+
+- **The lighter opening is the main gain, as hypothesized.** With T2 already denoised, diamond 1 beats square 3 for every D and G (+0.016 to +0.029). M0 (no opening) loses about 0.1: an opening is still needed.
+- **3D diffusion adds a smaller, consistent gain** at M1 (+0.0161 / +0.0113 for G0 / G1); D3 beats D2 in all six M x G pairs. The declared risk of smoothing small lesions did not materialize on the development data.
+- **v3 reverses the v2 trade-off.** Lesion detection rises from 18 / 16 to 33 / 31 of 59 GT lesions, SMALL from 2 / 1 to 6 / 5, and voxel Recall reaches about 0.70-0.73. The price is more FP voxels and 10 / 7 false components, with Precision 0.646 / 0.693.
+- **pn0 and pn3 are now close** (0.685 / 0.694; pn3 slightly higher).
+- **G0 vs G1:** G0 wins directly on DevelopmentScore (0.6898916 vs 0.6882820). No tie-break was involved, because no tolerance was declared. The 0.0016 margin is small and is not interpreted as a meaningful preference for removing the component filter.
+- **Scope of the claims:** the grid isolates the effect of each block on the scores (D3 > D2, M1 > M2 in every pair). It does not prove a mechanism, for example that D3 preserves small lesions better. What it shows is that the D3 + M1 pipeline produces more TP and detects more lesions. LARGE lesions detected: 27 / 28 (pn0) and 26 / 28 (pn3). SMALL lesions remain the main source of missed lesions. "Detected" means at least one shared voxel (Phase-93 rule), not complete segmentation.
+- **Caveat:** every development score is in-sample and optimistic (many decisions on pn0 / pn3). The 3D gradient threshold is relative to the volume range and was not tuned for the noisier held-out levels.
+
+#### Conclusion
+
+```text
+v3 = D3_M1_G0: v1 support pipeline; T2 filtered by whole-volume 3D anisotropic diffusion (explicit
+  fixed parameters); TA inside S2; one 2D diamond-1 opening per slice AND S2; no component filter.
+PRIMARY for the final test: v3. Secondary locked versions: v2, v1. Fixed before any held-out access.
+EXP-059 was the final development experiment before the test. Next: Phase 96, mandatory freeze of
+  v3, then held-out download and Phase 97 (primary + secondary locked-version comparisons).
+Files: data/processed/phase95_exp059_v3_{pn0,pn3}_selected_prediction.mat;
+  results/metrics/exp059_{tuning_grid_results,tuning_ranking,selected_configuration,v2_vs_winner,
+  winner_lesion_diagnostics}.csv
+```
+
+---
+
+### PHASE 96 — FINAL FREEZE RECORD (2026-10-16; not an experiment, no EXP id)
+
+```text
+EXP-059 is the final development experiment; amendment-A2 development closes here.
+PRIMARY = v3 = EXP-059 D3_M1_G0, designated on development data only, BEFORE any held-out access.
+Secondary locked versions: v1 (EXP-057 S2_TA_M2_G1, tag v1-frozen), v2 (EXP-058 F5_R0, tag v2-frozen).
+Frozen definition: src/segmentation/finalSegmentationConfig.m; entry point
+  src/segmentation/generateFinalPrediction.m(rawT1, rawT2) (regenerates EXP-021 from each condition's T1).
+Full pipeline, parameters and limitations: docs/PHASE96_FINAL_FREEZE.md.
+Regression (experiments/phase96_final_pipeline_check.m): PASS 39/39
+  final pn0 / pn3 = saved EXP-059 predictions voxel by voxel (3,970 / 3,530 voxels);
+  regenerated EXP-021 mask = saved mask; independent step-by-step rebuild = final;
+  Dice 0.685378241112002 / 0.694404998579949, DevelopmentScore 0.689891619845975 = EXP-059 artifact.
+  First run stopped in the SHA-256 helper (no Java runtime in this MATLAB) -> certutil; second run
+  failed one self-matching check label (software only) -> label renamed. No pipeline change.
+Manifest: results/metrics/phase96_final_freeze_manifest.csv (tracked copy docs/), 26 SHA-256 entries,
+  verified in MATLAB and independently with PowerShell Get-FileHash (26 / 26).
+Development values are in-sample and optimistic. Held-out pn1 / pn5 / pn7 / pn9 (same msles2 anatomy,
+  lesions and rf0; different noise) test robustness to unseen simulated noise, not independent-patient
+  generalization.
+Held-out: NOT downloaded, NOT accessed. config.m unchanged. No new experiment id.
+Version control: commit "fase 96" + tag v3-final-frozen - pending user approval. No push.
+Next: Phase 97 - held-out final test (primary v3; secondary locked comparisons v2, v1).
 ```

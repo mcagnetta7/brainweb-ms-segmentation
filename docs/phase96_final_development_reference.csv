@@ -1,0 +1,3 @@
+condition,version,configId,role,dice,iou,precision,recall,specificity,tpVoxels,fpVoxels,fnVoxels,tnVoxels,predictedVoxels,volumeErrorPercent,sourceExperiment,producedBy,countsEqualSavedPrediction
+pn0,v3,D3_M1_G0,"DEVELOPMENT REFERENCE (in-sample, not a test result)",0.685378241112002,0.521350142334282,0.645843828715365,0.730068337129841,0.999802128595303,2564,1406,948,7104219,3970,13.0410022779043,EXP-059,phase96_final_pipeline_check,1
+pn3,v3,D3_M1_G0,"DEVELOPMENT REFERENCE (in-sample, not a test result)",0.694404998579949,0.531868609963019,0.692634560906516,0.696184510250569,0.999847304072478,2445,1085,1067,7104540,3530,0.5125284738041,EXP-059,phase96_final_pipeline_check,1

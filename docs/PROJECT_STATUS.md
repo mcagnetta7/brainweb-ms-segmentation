@@ -24,7 +24,25 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
   - **Amendment A2 (2026-10-14):** EXP-059 (v3: D2/D3 anisotropic × opening M0/M1/M2 × G0/G1 on the v2 base) is the final development experiment before the test.
     - Primary = v3 only if strictly better than v2 on the DevelopmentScore, otherwise v2; it is fixed before any held-out access.
     - Phase 97 evaluates the primary plus the frozen secondary versions.
-  - **Next: EXP-059, then the mandatory freeze of the primary (Phase 96), held-out download, Phase 97.**
+  - **EXP-059 (v3), complete — PRIMARY VERSION FOR THE FINAL TEST: v3 = `D3_M1_G0`; secondary locked versions: v2, v1.**
+    - v3 = the v2 base with:
+      - T2 filtered by whole-volume 3D anisotropic diffusion (`src/preprocessing/anisotropicDiffusionVolume3D.m`: 26-neighbour, 5 iterations, exponential, gradient threshold 0.10 × volume range);
+      - TA inside S2;
+      - one 2D `diamond 1` opening per slice AND S2;
+      - no component filter.
+    - Generator: `src/segmentation/generateExp059Prediction.m`.
+    - Dice 0.68538 / 0.69440; DevelopmentScore **0.689892**. Precision 0.646 / 0.693, Recall 0.730 / 0.696. GT lesions detected 33 / 31 of 59 (SMALL 6 / 5).
+    - Files: `data/processed/phase95_exp059_v3_{pn0,pn3}_selected_prediction.mat`. Notes §13.73.
+  - **Phase 95: COMPLETE** (final development experiment EXP-059).
+- **Phase 96 — final freeze: READY TO FREEZE, WAITING FOR USER GIT APPROVAL** (2026-10-16).
+  - **Final primary:** v3 = `D3_M1_G0`, selected before held-out access.
+  - **Definition and entry point:** frozen definition in `src/segmentation/finalSegmentationConfig.m`; entry point `src/segmentation/generateFinalPrediction.m(rawT1, rawT2)`, which regenerates the EXP-021 mask from each condition's T1.
+  - **Regression:** `experiments/phase96_final_pipeline_check.m` PASS 39/39 (voxel-by-voxel reproduction of EXP-059 on pn0/pn3).
+  - **Development reference (in-sample, optimistic):** Dice 0.685378241112002 / 0.694404998579949; DevelopmentScore 0.689891619845975.
+  - **Manifest:** SHA-256 of 26 artifacts in `results/metrics/phase96_final_freeze_manifest.csv` (tracked copy in `docs/`). Record: `docs/PHASE96_FINAL_FREEZE.md`.
+  - **Held-out:** NOT downloaded, NOT accessed. `config.m` unchanged.
+  - **Pending:** local commit `fase 96` + tag `v3-final-frozen` (no push), after user approval.
+- **Next: Phase 97 — held-out final test** (download pn1/5/7/9; primary v3, secondary locked comparisons v2, v1).
 - **Phase 95 supplementary experiment (EXP-057), complete — CURRENT SELECTED DEVELOPMENT CONFIGURATION:**
   - **Search:** 36 configurations / 72 predictions on `pn0`/`pn3` (T1-derived support S0/S1/S2 × T2 threshold TA/TB inside the support × opening M0/M1/M2 × G0/G1), all generated before the GT. The baseline S0_TA_M2_G1 reproduces the EXP-056 winner voxel by voxel.
   - **Selected: `S2_TA_M2_G1`.**
@@ -263,4 +281,6 @@ Reusable functions: `src/segmentation/generateLesionCandidateMask.m` (current ca
 | Phase 95 development-only tuning (EXP-056) | notes §13.70; PROJECT_SPEC §19.2 |
 | Phase 95 T1-derived anatomical support (EXP-057, final development experiment) | notes §13.71; PROJECT_SPEC §19.2 |
 | v1 freeze, amendment A1, EXP-058 (v2) | notes §13.72; `EXPERIMENT_LOG.md` after EXP-057 |
+| v2 freeze, amendment A2, EXP-059 (v3) | notes §13.73; `EXPERIMENT_LOG.md` after EXP-058 |
+| Phase 96 final freeze (v3 pipeline, regression, manifest) | `docs/PHASE96_FINAL_FREEZE.md`; `EXPERIMENT_LOG.md` (Phase 96 record) |
 | EXP-022 … 027 (Phases 54–59) | notes §13.33–13.38; `EXPERIMENT_LOG.md` (summary table §6, status §11) |

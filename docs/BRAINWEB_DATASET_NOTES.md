@@ -4923,3 +4923,34 @@ These are development results; no held-out data was used. **Phase 70 COMPLETE.**
 - **Recovery rejected by the grid:** R1 adds more FP than TP, because the opening also disconnects lesion cores from adjacent bright structures. R2 leaks into S1 (up to about 585,000 predicted voxels). Both failure modes were declared in advance.
 - **Trade-off:** in pn3, v2 detects fewer GT lesions (28 → 16, SMALL 6 → 1) and has a lower Recall (0.697 → 0.603). It is more conservative and more consistent across conditions.
 - **Status:** v2 primary, v1 secondary; development closed (no EXP-059). Next: Phase 96, freeze of both versions, then held-out download and Phase 97.
+
+
+### 13.73 Phase 95, amendment A2: v2 freeze and v3 experiment (EXP-059)
+
+- **v2 freeze:** F5_R0 (EXP-058) frozen on 2026-10-14 (commit "fase 96b", tag `v2-frozen`), with the configuration and SHA-256 recorded in `EXPERIMENT_LOG.md`.
+- **Amendment A2:** the user reopened development for EXP-059.
+  - EXP-059 is the final development experiment before the held-out test, and the primary is mandatorily frozen afterwards.
+  - Phase 97 evaluates the primary plus the frozen secondary versions.
+  - Any later v4 needs its own untouched test set.
+- **EXP-059 grid:** 2 D × 3 M × 2 G = 12 configurations on top of v2.
+  - D: anisotropic diffusion of T2, per slice (D2 = v2) or on the whole volume (D3: 26-neighbour, gradient threshold 0.10 × volume range). D3 is a user-approved volumetric extension (ALLOWED_TECHNIQUES §4.4).
+  - M: no opening / diamond 1 / square 3.
+  - G: none / single-slice 3D component removal.
+- **Code:**
+  - `src/preprocessing/anisotropicDiffusionVolume3D.m`;
+  - `src/segmentation/generateExp059Prediction.m`;
+  - synthetic check `experiments/exp059_pipeline_check.m` (13/13);
+  - main script `experiments/exp059_v3_tuning.m` (27/27).
+- **Result:** **v3 = D3_M1_G0.**
+  - DevelopmentScore 0.689892 vs 0.661169 for v2; Dice 0.685 / 0.694.
+  - For every D and G: diamond 1 > square 3 > no opening. For every M and G: D3 > D2.
+  - The winner beats D3_M1_G1 directly on DevelopmentScore by 0.0016, with no tie-break involved. The margin is small and not interpreted as a meaningful preference.
+- **Effect vs v2:**
+  - Recall 0.642 → 0.730 / 0.603 → 0.696; Precision 0.700 → 0.646 / 0.712 → 0.693.
+  - GT lesions detected 18 → 33 / 16 → 31 of 59; SMALL 2 → 6 / 1 → 5.
+  - False predicted components 0 → 10 / 1 → 7.
+- **Interpretation:** with the T2 denoised, the pipeline with the lighter opening (and 3D diffusion) produces more TP and detects more lesions, at a moderate FP cost. LARGE lesions detected: 27 / 28 and 26 / 28. SMALL lesions remain the main source of missed lesions ("detected" = at least one shared voxel). The grid isolates the effects on the scores; it does not prove a mechanism.
+- **Caveats:**
+  - all development scores are in-sample and optimistic;
+  - the fixed 3D parameters were not tuned for the noisier held-out levels.
+- **Status:** v3 primary; v2 and v1 secondary locked versions. Next: Phase 96, freeze of v3, then held-out download and Phase 97.
