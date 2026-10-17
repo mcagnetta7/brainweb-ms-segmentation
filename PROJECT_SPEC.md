@@ -891,6 +891,34 @@ This rule is defined before any parameter optimization. It applies to every late
 - **Held-out:** not yet accessed. Phase 97 evaluates v3 (primary) plus v2 and v1 (secondary locked versions). It measures robustness to unseen simulated noise on the same msles2 phantom, not independent-patient generalization.
 - **Unchanged rules:** GT is never a segmentation input; `pn0`/`pn3` are development; `pn1`/`pn5`/`pn7`/`pn9` are held-out; no held-out result may change the frozen pipeline.
 
+**Phase 97 (held-out final test, executed 2026-10-16):** Phase 96 was COMPLETE and frozen before held-out access.
+- The primary v3 / `D3_M1_G0` was evaluated unchanged on `pn1` / `pn5` / `pn7` / `pn9` (official BrainWeb, msles2, 1 mm, rf0, T1 + T2).
+- **Complete-volume Dice:** 0.692 / 0.715 / 0.408 / 0.409 (mean 0.556). Good robustness at pn1 / pn5; marked degradation at pn7 / pn9, dominated by false-positive over-segmentation.
+- **Secondary locked versions** v1 / v2 are reported for comparison only and do not change the primary.
+- **Interpretation:** robustness to unseen simulated noise on the same msles2 anatomy and lesion configuration, **not** independent-patient generalization. Details: `EXPERIMENT_LOG.md` (Phase 97 record); notes §13.74.
+- **Frozen segmentation parameters:** unchanged.
+
+**Phase 98 (final-result provenance):** the Phase-97 outputs were verified read-only and indexed in `results/metrics/phase98_final_results_inventory.csv`.
+- **Authoritative files:**
+  - primary final metrics: `phase97_v3_heldout_metrics.csv`;
+  - primary predictions: the 4 `phase97_v3_*` masks;
+  - the result manifest: `phase97_result_manifest.csv`;
+  - the frozen-algorithm provenance: the Phase-96 manifest plus tag `v3-final-frozen`.
+- Stored CSV values keep full precision; rounding belongs only to presentation tables.
+
+**Phase 99 (final-method rationale):** a retrospective ablation on development results only (`results/metrics/phase99_ablation_*.csv`). Main contributions:
+- S2 support (+0.542), the largest by far;
+- T2 anisotropic filtering (+0.061);
+- the diamond-1 opening after D3 (+0.130 vs no opening, +0.029 vs square 3);
+- small effects for D2 → D3 and G1.
+
+Recovery reduced the score. The frozen parameters are unchanged.
+
+**Phase 101 (lesion-load robustness):** frozen v3 on matched BrainWeb custom simulations of msles1 / msles2 / msles3 (AI, 1 mm, 0 % noise, 0 % INU).
+- **Dice:** 0.013 / 0.662 / 0.788.
+- The automatic TA rule presupposes a sizeable lesion population: at mild load it over-segments massively.
+- These are simulated lesion burdens on one anatomy, not independent-patient generalization. The parameters are unchanged.
+
 **Data:**
 
 - Tuning uses only the development configurations of Section 19.1.

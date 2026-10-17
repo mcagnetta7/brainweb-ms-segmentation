@@ -42,7 +42,53 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
   - **Manifest:** SHA-256 of 26 artifacts in `results/metrics/phase96_final_freeze_manifest.csv` (tracked copy in `docs/`). Record: `docs/PHASE96_FINAL_FREEZE.md`.
   - **Held-out:** NOT downloaded, NOT accessed. `config.m` unchanged.
   - **Git freeze:** commit `96b16124999a0d40f8df2c66b072fb3a38f10322` ("fase 96: freeze final v3 pipeline"), annotated tag `v3-final-frozen` on that commit; post-commit manifest 26/26 valid; no push.
-- **Next: Phase 97 — held-out final test** (download pn1/5/7/9; primary v3, secondary locked comparisons v2, v1).
+- **Phase 97 — held-out final test: COMPLETE** (2026-10-16; `experiments/phase97_heldout_test.m` PASS 28/28; notes §13.74).
+  - Primary final version v3 / `D3_M1_G0`, unchanged; held-out pn1 / pn5 / pn7 / pn9 (official BrainWeb, downloaded after the freeze).
+  - **Dice:** pn1 0.692256, pn5 0.714816, pn7 0.407869, pn9 0.408943.
+    - Mean held-out Dice **0.555971**; worst **0.407869** (pn7); best **0.714816** (pn5).
+  - **Main finding:** robust performance at pn1 / pn5. Strong false-positive over-segmentation at pn7 / pn9: Precision 0.28–0.29, FP about 7–8×, Recall 0.68–0.75. No pass/fail threshold was pre-registered.
+  - **Secondary locked versions (mean Dice):** v1 0.549262, v2 0.553320, for comparison only. v1 is best at pn7 / pn9 but degrades at pn5. The development advantage of v3 almost disappears on average.
+  - Primary changed after the test: NO. Phase-96 hashes before / after: PASS.
+  - Frozen source unchanged: **YES** (26/26 hashes after the test). Held-out raw files unchanged. No commit or push.
+  - Outputs: `results/metrics/phase97_*.csv`, `results/figures/phase97_*.png`, `data/processed/phase97_*_prediction.mat`.
+- **Phase 98 — final raw result archive: COMPLETE** (2026-10-17; `experiments/phase98_results_archive_check.m` PASS 27/27, read-only).
+  - The final raw held-out results are archived and indexed.
+  - **Primary final metrics:** `results/metrics/phase97_v3_heldout_metrics.csv`. **Primary final predictions:** 4 frozen v3 held-out masks `data/processed/phase97_v3_{pn1,pn5,pn7,pn9}_prediction.mat`.
+  - **Secondary predictions:** 8 frozen v1 / v2 held-out masks.
+  - **Result manifest:** `phase97_result_manifest.csv` (27 entries, verified). **Inventory:** `results/metrics/phase98_final_results_inventory.csv` (32 rows with SHA-256 and authoritative roles).
+  - Phase-96 frozen hashes valid; held-out raw MRI unchanged.
+  - **Timing:** not measured; deferred to Phase 102.
+- **Phase 99 — retrospective ablation study: COMPLETE** (2026-10-17; `experiments/phase99_ablation_study.m` PASS 14/14; development CSVs only, no new prediction / MRI / GT / held-out; notes §13.75).
+  - 12 controlled one-factor pairs. The development trajectory EXP-026 → v3 is 7 controlled single-block steps.
+  - **Largest contribution:** S2 support +0.5419 (S0 → S1 +0.3436, S1 → S2 +0.1982).
+  - **Trajectory:** T2 anisotropic filtering is the second largest step after S2 (+0.0611).
+  - **Across all controlled pairs:** M0 → M1 after D3 is larger (+0.1295), so morphology remains essential; M2 → M1 +0.0286.
+  - **Small:** D2 → D3 +0.0014 (context-dependent) and G1 (±0.0016).
+  - **Block status:**
+    - not retained in v3: G1, square 3, D2;
+    - rejected: Gaussian, TB, recovery (−0.098 / −0.626), T2 AND PD;
+    - not introduced: region growing.
+  - Outputs: `results/metrics/phase99_ablation_{summary,pairwise}.csv`, `phase99_development_trajectory.csv`, `results/figures/phase99_ablation_development_score.png`.
+- **Phase 100 — noise robustness: COMPLETE, satisfied by Phase-97 artifacts** (2026-10-17; user decision; no new processing; notes §13.76).
+  - **Curve:** `results/figures/phase97_v3_noise_curves.png`. **Table:** `results/metrics/phase100_noise_robustness_table.csv` (6 rows, values copied, DEVELOPMENT / HELD-OUT labelled).
+  - The automatic TA threshold falls monotonically with noise. v3 is stable up to 5 % and drops at 7–9 % through false positives.
+  - Smoothing (controlled v1 vs v2) helps up to 5 % but is worse than no filter at 7–9 %.
+- **Phase 101 — lesion-load robustness: COMPLETE** (2026-10-17; `experiments/phase101_lesion_load_robustness.m` PASS 21/21; notes §13.77).
+  - Data: matched BrainWeb custom simulations (AI template, 1 mm, 0 % noise, 0 % INU) of msles1 / msles2 / msles3. The ICBM variants were obtained but not used.
+  - **v3 Dice:** mild 0.013 (29,301 predicted vs 422 GT voxels), moderate 0.662, severe 0.788. Primary v3 / D3_M1_G0 unchanged.
+  - **Robustness dimension:** simulated MS lesion load. The TA rule fails when the lesion population is very small.
+  - Outputs: `results/metrics/phase101_*.csv` (manifest 19 entries), `results/figures/phase101_*.png`.
+- **Amendment A3 (2026-10-17): post-test development of v4 opened**, to correct the mild-lesion-load defect.
+  - v3 remains the official result.
+  - **Development data:** pn0, pn3 and custom msles1 / msles2 / msles3 (noise 0).
+  - **Reserved test set**, generated only after the v4 freeze: custom AI, seed 2 — "normal" at 0 % and 3 %, msles1 at 3 %, msles3 at 3 %.
+  - **Sequence:** D1 diagnostic (`experiments/v4_d1_intensity_diagnostic.m`, development only) → EXP-060 (pre-registered) → v4 freeze → test.
+  - **D1 done:** in msles1 the TA threshold falls inside the GM distribution. The T1-high WM reference is stable and GT-free.
+  - **EXP-060 done (PASS 8/8): v4 = k5**, threshold max(TA2, μWM + 5σWM).
+    - Mean development Dice 0.631 vs 0.569 for v3. msles1 0.013 → 0.266 (29,301 → 269 voxels); pn0 0.722, pn3 0.711, msles2 0.667, msles3 0.788.
+    - With k = 5 the floor is active in all development cases. In-sample values.
+  - **Next:** v4 freeze (commit + tag, waiting for user approval), then the reserved test (8 custom jobs, seed 2).
+- **Phase 102 — runtime measurement:** not started (after v4, or when the user decides).
 - **Phase 95 supplementary experiment (EXP-057), complete — CURRENT SELECTED DEVELOPMENT CONFIGURATION:**
   - **Search:** 36 configurations / 72 predictions on `pn0`/`pn3` (T1-derived support S0/S1/S2 × T2 threshold TA/TB inside the support × opening M0/M1/M2 × G0/G1), all generated before the GT. The baseline S0_TA_M2_G1 reproduces the EXP-056 winner voxel by voxel.
   - **Selected: `S2_TA_M2_G1`.**

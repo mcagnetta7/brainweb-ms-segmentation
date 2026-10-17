@@ -10319,3 +10319,416 @@ PHASE 96 COMPLETE (2026-10-16): freeze commit 96b16124999a0d40f8df2c66b072fb3a38
   data/raw, primary v3 / D3_M1_G0, working tree clean. No push. Held-out still NOT accessed.
 READY FOR PHASE 97 - HELD-OUT FINAL TEST.
 ```
+
+---
+
+### PHASE 97 — HELD-OUT FINAL TEST (2026-10-16; final evaluation, not an experiment, no EXP id)
+
+```text
+Precondition: tag v3-final-frozen -> 96b16124999a0d40f8df2c66b072fb3a38f10322; Phase-96 manifest
+  26/26 SHA-256 valid BEFORE any held-out download.
+Data: official BrainWeb msles2, 1 mm, rf0, T1 + T2 at pn1 / pn5 / pn7 / pn9 (8 files, 14,218,274 bytes
+  each, little-endian 0..4095, 181 x 217 x 181), downloaded 2026-10-16 after the freeze; SHA-256 in
+  data/raw/msles2/DOWNLOAD_INFO.txt. No PD, no rf20 / rf40, no other phantom.
+Script: experiments/phase97_heldout_test.m, PASS 28/28. Order: freeze check -> 4 v3 predictions with
+  generateFinalPrediction(rawT1, rawT2), saved and re-read -> v1 / v2 secondary predictions (their
+  generators first reproduced the frozen v1 / v2 pn0 / pn3 predictions exactly) -> GT -> metrics.
+  config.m unchanged (held-out paths passed to the validated loader in memory only).
+Automatic values (frozen rules, data-dependent; not parameters):
+  pn1: brain-mask thr 0.258824; T1 levels 0.337393 / 0.484480; TA levels 0.483144 / 0.603947
+  pn5: 0.247059; 0.307549 / 0.439647; 0.418543 / 0.532411
+  pn7: 0.247059; 0.311726 / 0.434504; 0.382709 / 0.443473
+  pn9: 0.243137; 0.320274 / 0.429859; 0.356035 / 0.414233
+PRIMARY HELD-OUT RESULTS - v3 / D3_M1_G0 (complete volume, label 10):
+  cond  pred   TP    FP    FN    Dice              IoU      Precision Recall   Specificity VolErr %
+  pn1   3887  2561  1326   951  0.692255710231112 0.529351 0.658863  0.729214 0.999813    10.68 (+375)
+  pn5   3217  2405   812  1107  0.714816466042503 0.556198 0.747591  0.684795 0.999886     8.40 (-295)
+  pn7   9399  2633  6766   879  0.40786925877159  0.256178 0.280136  0.749715 0.999048   167.63 (+5887)
+  pn9   8162  2387  5775  1125  0.408942950145623 0.257026 0.292453  0.679670 0.999187   132.40 (+4650)
+  meanHeldOutDice 0.555971, min 0.407869 (pn7), max 0.714816 (pn5) - descriptive only.
+Lesion-wise (Phase-93 rule; "detected" = at least one shared voxel), v3:
+  pn1 detected 32/59, false components 9 of 41;  SMALL 5/31, LARGE 27/28; S2 holds 3117 GT voxels (0.888)
+  pn5 24/59, 3 of 32;   SMALL 3/31, LARGE 21/28;  S2 3103 (0.884)
+  pn7 41/59, 86 of 127; SMALL 13/31, LARGE 28/28; S2 3018 (0.859)
+  pn9 44/59, 102 of 143; SMALL 16/31, LARGE 28/28; S2 2809 (0.800)
+SECONDARY LOCKED COMPARISON (Dice; does NOT change the primary):
+  cond  v3        v1 (S2_TA_M2_G1)  v2 (F5_R0)
+  pn1   0.692256  0.661400          0.670421
+  pn5   0.714816  0.412148          0.661817
+  pn7   0.407869  0.562216          0.425342
+  pn9   0.408943  0.561285          0.455699
+  mean  0.555971  0.549262          0.553320
+Result manifest: results/metrics/phase97_result_manifest.csv (27 SHA-256 entries: 8 raw held-out
+  files, 12 predictions, 3 CSV, 3 figures, the script). Phase-96 manifest unchanged; the 26 frozen
+  source hashes matched AFTER the test; raw held-out files unchanged.
+```
+
+#### Interpretation (descriptive; no parameter or code change)
+
+- **Stable up to 5 % noise.** At pn1 and pn5 the v3 Dice (0.692, 0.715) is in line with the development values (0.685 / 0.694).
+- **Marked degradation at 7 and 9 %, mainly through Precision.** The Dice drops to about 0.41. FP rise from 812 to 6,766 / 5,775 and the predicted volume reaches 2.3–2.7× the GT, while voxel Recall stays at 0.68–0.75.
+  - The behaviour is not a gradual decline: pn5 is the best held-out condition. "Performance decreases with noise" would be an inaccurate summary.
+  - The automatic T2 thresholds decrease substantially (TA level 2: 0.532 at pn5, 0.443 / 0.414 at pn7 / pn9), and the gap between the two levels narrows (0.114, 0.061, 0.058), while the FP volume increases.
+  - This suggests reduced separability of lesion-like intensities within S2. The present test does not isolate the causal contribution of the thresholding stage: D3 under strong noise, the intensity distribution inside S2, the multithresh partition and the noisy-T1-derived S2 may all contribute.
+  - The overlays (fixed k = 91) show FP clusters adjacent to the ventricles and in other parenchymal regions.
+- **Two distinct problems at high noise:**
+  1. the S2 Recall ceiling worsens, because T1 is noisy too (about 20 % of the GT voxels are outside S2 at pn9);
+  2. inside what remains of S2, the T2 segmentation over-segments strongly.
+- **Lesion counts rise at high noise but are not a gain.** More GT lesions are touched (41 / 44) together with 86 / 102 false components: compatible with noise-driven overlaps (any-overlap rule). Higher lesion detection does not mean better segmentation here, which shows why a permissive lesion-wise metric alone is not enough.
+- **S2 ceiling:** S2 coverage of the GT falls with noise (0.888 → 0.800 at pn9).
+- **The development advantage almost disappears on held-out noise.**
+  - Development DevelopmentScore: v1 0.600, v2 0.661, v3 0.690. Mean held-out Dice: 0.549, 0.553, 0.556.
+  - v3 stays first on average and is clearly better at pn1 and pn5. The unfiltered v1 is best at pn7 and pn9, but degrades at pn5 (0.412).
+  - Each version degrades at a different noise level. Optimizing on pn0 / pn3 did not produce a uniform improvement across noise levels. This does not make the v1 → v2 → v3 development useless.
+- **v3 remains the primary**, fixed before held-out access. The secondary comparison is reported, not used.
+- **No pre-registered pass threshold existed,** so v3 is neither "passed" nor "failed". Phase 97 is methodologically complete regardless of the scores.
+- **Summary:** the frozen v3 pipeline generalized well to moderate unseen noise levels but showed a clear robustness limit at higher simulated noise levels, where false-positive over-segmentation became the dominant failure mode.
+- **Limitations:**
+  - same msles2 anatomy and lesions;
+  - only the simulated noise changes;
+  - four noise configurations, not four subjects;
+  - development values are optimistic;
+  - S2 limits Recall;
+  - "detected" means any overlap.
+
+---
+
+### PHASE 98 — FINAL RAW RESULT ARCHIVE (2026-10-17; archive and verification, not an experiment, no EXP id)
+
+```text
+Script: experiments/phase98_results_archive_check.m (read-only), PASS 27/27; console saved by the
+  script itself in results/metrics/phase98_verification_console.txt (the pasted output was cut
+  before the final line; the PASS line was confirmed from this log).
+Verified, without rerunning segmentation or recomputing metrics on the GT:
+  - tag v3-final-frozen -> 96b1612; Phase-96 manifest 26/26 hashes valid; primary v3 / D3_M1_G0;
+  - Phase-97 result manifest: 27 entries (8 raw MRI + 12 predictions + 3 CSV + 3 figures + 1 script),
+    unique paths, all SHA-256 valid and matching;
+  - 8 held-out raw MRI: SHA-256 = DOWNLOAD_INFO.txt record, 14,218,274 bytes each;
+  - 12 predictions (4 v3, 4 v1, 4 v2): M_pred logical 181x217x181; condition / version / configId
+    (D3_M1_G0, S2_TA_M2_G1, F5_R0) / heldOutCondition / gtUsedForGeneration consistent; stored voxel
+    count = mask voxels;
+  - primary, comparison and lesion-wise CSVs: structure, roles (v3 PRIMARY HELD-OUT, v1 / v2
+    SECONDARY LOCKED COMPARISON), algebraic consistency of all stored metrics with the stored
+    confusion counts (TP+FN = 3512, total = 7,109,137), table voxels = mask voxels, detected +
+    missed = 59, SMALL 31, LARGE 28, lesion overlap voxels = primary TP. CSVs not rewritten.
+Inventory (index of existing files, no copies): results/metrics/phase98_final_results_inventory.csv,
+  32 rows with SHA-256. Authoritative roles:
+    PRIMARY FINAL TEST METRICS        results/metrics/phase97_v3_heldout_metrics.csv
+    PRIMARY HELD-OUT PREDICTIONS      data/processed/phase97_v3_{pn1,pn5,pn7,pn9}_prediction.mat
+    SECONDARY VERSION COMPARISON      results/metrics/phase97_frozen_versions_comparison.csv
+    LESION-WISE DIAGNOSTICS           results/metrics/phase97_v3_lesionwise_diagnostics.csv
+    PROVENANCE                        results/metrics/phase97_result_manifest.csv
+    FROZEN ALGORITHM PROVENANCE       results/metrics/phase96_final_freeze_manifest.csv + tag v3-final-frozen
+No persistent Phase-97 console log exists; Phase 97 was not rerun to create one (the machine-readable
+  outputs and manifests are authoritative).
+Runtime: not measured; deferred to Phase 102. No timing benchmark here.
+No algorithm change, no new prediction, no new experiment, no metric used for a decision.
+  Phase 99 not started. No commit, no push.
+```
+
+---
+
+### PHASE 99 — RETROSPECTIVE ABLATION STUDY (2026-10-17; synthesis of saved development results, not an experiment, no EXP id)
+
+```text
+Script: experiments/phase99_ablation_study.m, PASS 14/14. Reads only saved development CSVs (EXP-026,
+  EXP-030 / 033, EXP-042, EXP-056 - 059, Phase 73). No prediction, no MRI, no GT, no segmentation
+  call, no held-out data. Phase-96 / 97 / 98 hashes matched before and after.
+Method: each configuration is described by 7 blocks (support, threshold, filter, filter dimensionality,
+  morphology, component rule, recovery) taken from the saved grid columns or, when an experiment
+  fixed a block by design, from its pre-registration. A pair counts as controlled only if the
+  descriptors differ exactly in the declared block (filter dimensionality is an attribute of the
+  filter). Cross-experiment links verified: EXP-026 = EXP-056 P0_T2_M0_G0; EXP-030 / 033 opening =
+  P0_T2_M2_G0; EXP-056 winner = EXP-057 S0_TA_M2_G1; v1 = EXP-058 F0_R0; v2 = EXP-059 D2_M2_G1.
+Controlled one-factor comparisons (DevelopmentScore, development pn0 + pn3; 12/12 controlled):
+  P01 opening none -> square 3 (EXP-056)       0.041545 -> 0.056845   +0.015300
+  P02 G1 introduction, pre-S2 (EXP-056)         0.056845 -> 0.058158   +0.001312
+  P03 support S0 -> S1 (EXP-057, TA M2 G1)      0.058158 -> 0.401790   +0.343632
+  P04 support S1 -> S2                          0.401790 -> 0.600034   +0.198244
+  P05 support S0 -> S2                          0.058158 -> 0.600034   +0.541876
+  P06 T2 anisotropic 2D filter (EXP-058, R0)    0.600034 -> 0.661169   +0.061136
+  P07 diffusion D2 -> D3 (EXP-059, M2 G1)       0.661169 -> 0.662553   +0.001384
+  P08 morphology M0 -> M1 (D3, G0)              0.560347 -> 0.689892   +0.129545
+  P09 morphology M2 -> M1 (D3, G0)              0.661320 -> 0.689892   +0.028572
+  P10 component rule G1 -> G0 (D3, M1)          0.688278 -> 0.689892   +0.001614
+  P11 recovery R0 -> R1 (EXP-058, F5)           0.661169 -> 0.562919   -0.098250
+  P12 recovery R0 -> R2 (EXP-058, F5)           0.661169 -> 0.034881   -0.626288
+Development trajectory (8 milestones, 7 transitions, all 7 verified as controlled single-block changes):
+  EXP-026 0.041545 -> +opening 0.056845 -> +G1 0.058158 -> +S2 (v1) 0.600034 -> +aniso T2 (v2) 0.661169
+  -> 2D->3D 0.662553 -> square3->diamond1 0.688278 -> -G1 (v3) 0.689892
+Not retained (appendix): multimodal T2 AND PD (EXP-042) 0.056472 vs 0.056845 (-0.000374);
+  region growing NOT RETAINED / NOT NUMERICALLY ABLATED (Phase 73: prerequisite not satisfied).
+Outputs: results/metrics/phase99_ablation_{summary,pairwise}.csv,
+  results/metrics/phase99_development_trajectory.csv, results/figures/phase99_ablation_development_score.png
+No held-out result used; no new primary; v3 / D3_M1_G0 unchanged; no commit, no push.
+```
+
+#### Interpretation (development evidence only)
+
+- **S2 anatomical support is by far the largest contribution** (+0.5419). It works in two steps: excluding T1-low (S1, +0.344) and restricting to the filled T1-high envelope (+0.198). The FP fall from 66,484 / 63,126 (S0) to 1,167 / 3,123 (S2). S2 is an automatic intensity-derived support, not a white-matter ground truth.
+- **T2 anisotropic filtering is the second largest increment in the incremental development trajectory, after S2** (+0.0611). Across all controlled ablations, the diamond-1 opening against no morphology after D3 gives an even larger increment (+0.1295). This confirms that morphology remains essential in the final pipeline.
+  - In pn3 it cuts the FP from 3,123 to 857 (Precision 0.439 → 0.712).
+  - The trade-off is lower Recall (TP 2,448 → 2,118 in pn3).
+- **Morphology remains necessary after D3:** no opening loses 0.1295 (FP 4,768 / 3,928). Diamond 1 beats square 3 by 0.0286: square 3 removes more lesion voxels (TP 2,217 / 2,083 vs 2,564 / 2,445).
+- **D2 → D3 is small** (+0.0014 with square 3 and G1).
+- **G1 has a small effect in both contexts:** +0.0013 before S2, and −0.0016 when kept after D3 + M1. It was not retained in v3; this does not make it harmful in general.
+- **Recovery is clearly unfavourable:** R1 adds TP (+588 / +653) but far more FP (+2,913 / +2,573); R2 leaks through S1 (about 195,000 / 169,000 FP).
+- **Contributions are context-dependent, not additive.** The size, and sometimes the sign, of an effect depends on the blocks already present, and each pair measures a block in one context only:
+  - D3 vs D2 is +0.0014 with square 3 + G1, but +0.0161 with diamond 1 + G0 (EXP-059 grid);
+  - diamond 1 lost to square 3 before filtering (EXP-057: 0.5536 vs 0.6000) and won after D3;
+  - G1 helped before S2 and not after D3 + M1.
+- **Block status:**
+  - not retained in the final v3 (used in intermediate versions, then replaced): G1, the square-3 opening, D2 anisotropic diffusion;
+  - explicitly rejected during development: Gaussian filtering, TB thresholding, recovery R1 / R2, T2 AND PD fusion;
+  - not introduced: region growing.
+- The held-out behaviour is analysed separately in Phase 100.
+
+---
+
+### PHASE 100 — NOISE ROBUSTNESS: SATISFIED BY PHASE-97 ARTIFACTS (2026-10-17; no new processing, no EXP id)
+
+```text
+Roadmap row 100 (Macrofasi.docx): "Solo dopo la pipeline stabile, confrontare diversi noise level
+  BrainWeb. Le slide mostrano che il rumore puo compromettere Otsu e che lo smoothing puo migliorare
+  il thresholding." Output: "Curva performance vs rumore."
+Decision (user, 2026-10-17): no new analysis. The required curve and comparisons already exist from
+  Phase 97 (held-out) and the frozen development references; rerunning would duplicate them or
+  invite a second look at the held-out data. No prediction, no metric recomputation, no GT access.
+Existing curve: results/figures/phase97_v3_noise_curves.png (Dice, Precision / Recall, predicted
+  volume vs noise; pn0 / pn3 marked DEVELOPMENT, pn1 / pn5 / pn7 / pn9 HELD-OUT).
+Consolidated table (values COPIED as text from the authoritative CSVs, not recomputed):
+  results/metrics/phase100_noise_robustness_table.csv (6 rows, role column DEVELOPMENT / HELD-OUT)
+  noise  cond  role         v3 Dice   Precision Recall  FP    TA level 2  v1 Dice (no filter)  v2 Dice (aniso 2D)
+  0 %    pn0   DEVELOPMENT  0.685378  0.645844  0.730068 1406  0.615594    0.661039             0.669340
+  1 %    pn1   HELD-OUT     0.692256  0.658863  0.729214 1326  0.603947    0.661400             0.670421
+  3 %    pn3   DEVELOPMENT  0.694405  0.692635  0.696185 1085  0.565404    0.539029             0.652998
+  5 %    pn5   HELD-OUT     0.714816  0.747591  0.684795  812  0.532411    0.412148             0.661817
+  7 %    pn7   HELD-OUT     0.407869  0.280136  0.749715 6766  0.443473    0.562216             0.425342
+  9 %    pn9   HELD-OUT     0.408943  0.292453  0.679670 5775  0.414233    0.561285             0.455699
+Integrity: Phase-96 manifest 26/26 and Phase-97 manifest 27/27 hashes valid; nothing modified.
+```
+
+#### Answers to the roadmap questions (descriptive)
+
+- **Noise and the automatic threshold.** The automatic T2 threshold (TA level 2, multithresh inside S2) decreases monotonically with noise: 0.616, 0.604, 0.565, 0.532, 0.443, 0.414. The v3 Dice is stable up to 5 % and then drops to about 0.41 through false positives (FP about 7–8×). This is consistent with the course observation that noise can compromise Otsu-type thresholding. The causal role of the threshold stage was not isolated.
+- **Does smoothing improve the thresholding?** v1 (no filter) vs v2 (anisotropic 2D on T2) is a controlled single-block comparison (Phase 99, P06).
+  - **Up to 5 % smoothing helps strongly** (pn3 0.539 → 0.653, pn5 0.412 → 0.662).
+  - **At 7–9 % the filtered versions are worse than v1** (pn7 0.562 vs 0.425; pn9 0.561 vs 0.456).
+  - Smoothing therefore improves thresholding at low to moderate noise but does not prevent the high-noise breakdown with the frozen parameters.
+  - The unfiltered v1 is itself non-monotonic: it is poor at pn5 and better at pn7 / pn9.
+- **Caveats:**
+  - pn0 / pn3 are development (in-sample, optimistic);
+  - one phantom and one lesion configuration;
+  - only simulated noise varies;
+  - six noise points;
+  - the frozen pipeline is unchanged; the primary remains v3.
+
+---
+
+### PHASE 101 — LESION-LOAD ROBUSTNESS: BLOCKED, WAITING FOR BrainWeb CUSTOM SIMULATIONS (2026-10-17)
+
+```text
+Design (prompt): frozen v3 on matched CUSTOM simulations of msles1 (mild, 422 mm3), msles2 (moderate,
+  3512 mm3) and msles3 (severe, 10104 mm3), identical settings, only lesion load varies; v3 only.
+Feasibility verified: msles1 / msles3 MRI exist only as custom simulations (BrainWeb: "only used for
+  the BrainWeb custom MRI simulations"); crisp msles1 / msles3 phantoms are directly downloadable.
+  The custom form requires an e-mail for notification.
+Action (user-authorized): six custom jobs submitted on 2026-10-17 with the user's institutional
+  e-mail (address not stored in project files), all queued:
+  msles1 T1 / T2, msles2 T1 / T2, msles3 T1 / T2; 1 mm, magnitude, noise 0 % (seed 1),
+  INU 0 % (field A), protocol ICBM (T1 SFLASH TR 18 / TE 10 / flip 30; T2 DSE_LATE TR 3300 /
+  TE 35, 120). Job numbers and full settings: data/raw/brainweb_custom/phase101/REQUESTS.txt.
+  Protocol ICBM chosen because the pre-computed AI / ICBM labelling is unresolved (notes 5.1) and
+  ICBM matches the published SBD parameters; custom msles2 vs pre-computed msles2 pn0 will be
+  compared descriptively.
+Status: TECHNICALLY BLOCKED until the simulations are delivered. Nothing downloaded, no prediction,
+  no GT loaded. Pending checks after delivery: file format / 12-bit 0..4095 compatibility with the
+  frozen normalization (otherwise BLOCKED - INPUT REPRESENTATION INCOMPATIBLE).
+Frozen pipeline untouched; Phase 102 not started.
+```
+
+### PHASE 101 — LESION-LOAD ROBUSTNESS: COMPLETE (2026-10-17; post-freeze robustness extension, no EXP id)
+
+```text
+Data (BrainWeb CUSTOM simulations, identical settings, only the phantom varies): AI template
+  (T1 SFLASH TR 35 / flip 45 / TE 10; T2 SE TR 3000 / TE 80), 1 mm, magnitude, noise 0 % (seed 1),
+  INU 0 % (field A). msles1 = "mild" (422 mm3), msles2 = "moderate" (3512), msles3 = "severe" (10104).
+  Raw short, little-endian 0..4095 (compatible with the frozen normalization). Crisp GT: msles1 / msles3
+  downloaded 2026-10-17, msles2 = existing model. Jobs, hashes: data/raw/brainweb_custom/phase101/
+  REQUESTS.txt, results/metrics/phase101_dataset_provenance.csv.
+Protocol: six ICBM simulations were obtained first; custom ICBM msles2 vs pre-computed msles2 pn0 gave
+  T2 corr 0.939 (different contrast) -> six AI simulations requested; AI msles2 vs pre-computed: T1 corr
+  0.990, T2 corr 0.977 (about 0.89 x, not byte-identical). AI = primary; ICBM files kept, NOT used. This
+  resolves notes 5.1: the pre-computed SBD matches the AI protocol. (A per-tissue intensity check used the
+  known msles2 development GT; msles1 / msles3 GT were not opened before the predictions.)
+Script: experiments/phase101_lesion_load_robustness.m, PASS 21/21 (first run: one check failed only
+  because the expected manifest size was miscounted, 18 instead of 19; constant corrected, rerun
+  identical). Order: integrity -> 3 v3 predictions with generateFinalPrediction, saved and re-read ->
+  GT -> metrics. Label 10 verified: voxel counts = official lesion volumes 422 / 3512 / 10104.
+Automatic values: brain-mask threshold 0.250980 (all three); T1 levels 0.336043 / 0.479115 (msles1,
+  msles2), 0.336043 / 0.477207 (msles3); TA levels msles1 0.432972 / 0.469157, msles2 0.443442 / 0.561638,
+  msles3 0.446221 / 0.590646.
+PRIMARY RESULTS (v3 / D3_M1_G0, complete volume):
+  phantom  load      GT     pred    TP    FP     FN    Dice      Precision Recall   VolErr %  FP/GT   pred/GT
+  msles1   mild       422  29301   192  29109   230  0.012919  0.006553  0.454976  6843.4   68.98   69.43
+  msles2   moderate  3512   3363  2276   1087  1236  0.662110  0.676777  0.648064     4.24    0.310   0.958
+  msles3   severe   10104   9793  7842   1951  2262  0.788260  0.800776  0.776128     3.08    0.193   0.969
+  (descriptive only: Dice mean 0.487763, min 0.012919, max 0.788260)
+Lesion-wise (26-conn, any overlap) and S2:
+  msles1: 13 GT lesions, 7 detected, 678 predicted components (670 false); sizes min 1 / median 8 /
+          max 260; GT inside S2 301 / 422 (recall ceiling 0.713)
+  msles2: 59 lesions, 22 detected, 31 components (7 false); median 7, max 927; S2 0.884
+  msles3: 39 lesions, 23 detected, 33 components (1 false); median 20, max 5003; S2 0.931
+  Continuous size statistics only; the Phase-94 7-voxel split was NOT applied across phantoms.
+Outputs: results/metrics/phase101_{lesion_load_robustness,lesionwise_diagnostics,dataset_provenance,
+  result_manifest}.csv (manifest 19 entries), results/figures/phase101_lesion_load_{metrics,overlays}.png,
+  data/processed/phase101_v3_{msles1,msles2,msles3}_prediction.mat.
+Integrity: Phase-96 / 97 / 98 / 99 hashes unchanged before and after; inputs unchanged; config.m
+  unchanged; primary v3 unchanged; no tuning, no v4; Phase 102 not started.
+```
+
+#### Interpretation (descriptive)
+
+- **Moderate and severe loads:** v3 behaves consistently. Custom msles2 gives Dice 0.662, in line with the pre-computed development value 0.685. The severe phantom gives the highest Dice (0.788), with the predicted volume within 3–4 % of the GT.
+- **Mild load is a severe failure, through Precision.** v3 predicts 29,301 voxels for 422 lesion voxels (69× the GT; Dice 0.013). The FP are scattered parenchymal clusters (overlay, k = 70).
+  - The two automatic T2 levels inside S2 almost coincide (gap 0.036, vs 0.118 for msles2 and 0.144 for msles3).
+  - This is compatible with a structural property of the TA rule: the highest of three multithresh classes inside S2 is taken as "lesion", which presupposes a sufficiently large lesion-intensity population. With very few lesion voxels, the highest class falls on normal-appearing tissue.
+  - The same would be expected for a lesion-free brain. This is an interpretation; it was not isolated experimentally.
+- **Two further effects of lesion load:** the S2 coverage of the GT increases with load (0.713 / 0.884 / 0.931), and the median lesion size increases (8 / 7 / 20).
+- **The automatic thresholds behave as expected for a shared anatomy:** brain-mask and T1 thresholds are almost identical across phantoms; only the TA levels change.
+- **Limitations:**
+  - the three phantoms are simulated lesion loads on the same anatomy, not independent patients;
+  - one noise-free condition only;
+  - custom data are close to, but not identical with, the pre-computed development domain.
+  The primary pipeline remains v3; no change was made in response to these results.
+
+---
+
+### Protocol amendment A3 (2026-10-17): post-test development of v4 (lesion-load defect)
+
+```text
+Decision: the user opens a POST-TEST development phase (v4) to address the Phase-101 failure at mild
+lesion load (msles1: 29,301 predicted vs 422 GT voxels; the two automatic T2 levels inside S2 nearly
+coincide). This is outside the roadmap order and does not rewrite any earlier phase.
+Rules:
+  1. v3 / D3_M1_G0 (tag v3-final-frozen) remains the OFFICIAL project result; its Phase-97 / 100 / 101
+     results stay as reported. v4 is reported as a post-test extension.
+  2. Development data for v4 (already seen, so development by definition):
+       pre-computed msles2 pn0 and pn3 (rf0, 1 mm);
+       Phase-101 custom AI simulations msles1 / msles2 / msles3 (1 mm, noise 0 %, INU 0 %, seed 1).
+     The Phase-97 held-out pn1 / pn5 / pn7 / pn9 are also already seen: they are NOT a test for v4
+     and are not used for v4 design (amendment A2, rule 5).
+  3. RESERVED v4 TEST SET, declared now, generated / downloaded only AFTER the v4 freeze:
+       BrainWeb custom simulations, AI template, 1 mm, magnitude, INU 0 % (field A), random seed 2,
+       T1 + T2:  (a) phantom "normal" (no lesions), noise 0 %;  (b) "normal", noise 3 %;
+                 (c) msles1 (mild), noise 3 %;            (d) msles3 (severe), noise 3 %.
+       8 jobs; noise reference tissue "(brightest_tissue)" as in Phase 101. Crisp GT: msles1 / msles3
+       existing files; for "normal" the lesion GT is empty (evaluation by FP volume).
+  4. Design sequence: (D1) a declared development diagnostic of T2 intensities inside S2 by tissue
+     (development GT allowed) -> (EXP-060) ONE pre-registered experiment comparing the frozen TA rule
+     with at most two classical alternatives, base case reproducing v3 voxel by voxel; adoption criteria
+     fixed in the pre-registration before any EXP-060 result -> v4 freeze (commit + tag) -> test.
+  5. No decision may use the reserved test set before the v4 freeze.
+Declared cost: development data now include the case that revealed the defect; the v4 effect on it is
+  in-sample by construction. Only the reserved test set can show whether the correction generalizes.
+```
+
+#### v4 / D1 development diagnostic (2026-10-17; experiments/v4_d1_intensity_diagnostic.m; no prediction)
+
+```text
+Filtered T2 (D3) inside S2, by development GT tissue; TA levels = multithresh(T2f(S2), 2):
+  condition  TA1     TA2     gap     separability  WM-ref mean / std (S2 & T1-high, GT-free)
+  pn0        0.4925  0.6156  0.1231  0.7753        0.4851 / 0.0311
+  pn3        0.4476  0.5654  0.1178  0.7760        0.4401 / 0.0292
+  msles1     0.4330  0.4692  0.0362  0.8086        0.4347 / 0.0242
+  msles2     0.4434  0.5616  0.1182  0.7781        0.4370 / 0.0277
+  msles3     0.4462  0.5906  0.1444  0.8384        0.4397 / 0.0334
+Fraction of GM inside S2 above TA2: pn0 0.040, pn3 0.024, msles1 0.574, msles2 0.013, msles3 0.004;
+  WM above TA2: msles1 0.079 (others <= 0.004). msles1: 91,886 voxels above TA2 before the opening.
+GM 95th percentile: 0.610 / 0.546 / 0.531 / 0.532 / 0.531; lesion median 0.805 / 0.728 / 0.599 / 0.705 / 0.737.
+Findings: in msles1 TA2 falls inside the GM distribution; the TA gap separates msles1, the multithresh
+  separability does not; the T1-high WM reference is stable and GT-free; the T1-mid reference is
+  lesion-contaminated (msles3 std 0.114). Outputs: results/metrics/v4_d1_*.csv, results/figures/v4_d1_t2_by_tissue.png.
+```
+
+### EXP-060 — v4 development experiment under amendment A3: white-matter-referenced floor for TA
+
+#### Pre-registration (written after D1, before any EXP-060 result; approved by the user on 2026-10-17)
+
+```text
+Base: frozen v3 (D3_M1_G0). Development: pn0, pn3 (pre-computed), custom msles1 / msles2 / msles3
+  (AI, noise 0). Held-out pn1-pn9 and the reserved v4 test set NOT used.
+Rule family (only one, chosen after the declared D1 diagnostic on development data):
+  T2 threshold = max(TA level 2, muWM + k * sigmaWM), where muWM / sigmaWM are the mean / standard
+  deviation (MATLAB std, N-1) of the D3-filtered T2 inside S2 AND T1-high (class 3 of the frozen T1
+  partition) - GT-free, computed per image. Candidate = S2 AND T2f > threshold. Everything else as v3
+  (EXP-021, S2, D3 with range check, one 2D diamond-1 opening per slice, AND S2, no G1, no recovery).
+  multithresh separability rejected as a guard by D1 (not discriminative).
+Grid: k in {none (= v3), 3, 4, 5, 6}: 5 configurations x 5 development conditions; all 25 predictions
+  saved before the GT is loaded.
+Base check: k = none reproduces the saved v3 predictions voxel by voxel (pn0, pn3: EXP-059 files;
+  msles1 / 2 / 3: Phase-101 files), otherwise TECHNICALLY BLOCKED.
+Selection / adoption rule:
+  objective = mean complete-volume Dice over the 5 development conditions (moderate load appears twice:
+    pn0 / pn3 and custom msles2 - declared, kept for simplicity);
+  non-inferiority: Dice on each of pn0, pn3, msles2, msles3 must not drop by more than 0.01 vs v3;
+  v4 = the admissible k with the highest objective, only if strictly higher than v3's; exact tie ->
+  larger k; if no k qualifies, there is no v4 and v3 stays.
+Declared expectations / failure modes: k = 3 probably leaves GM above the floor in msles1; large k may
+  cut faint lesions (msles1 lesion p05 0.486); msles1 is in-sample, so its improvement is optimistic;
+  the lesion-free behaviour can only be measured on the reserved test.
+Post-selection diagnostics only: FP volume, lesion-wise (Phase-93 rule), S2 coverage.
+After EXP-060: v4 freeze (commit + tag) -> reserved test (8 custom jobs, seed 2).
+```
+
+#### EXP-060 results (2026-10-17; experiments/exp060_v4_tuning.m, PASS 8/8)
+
+```text
+Base k = none reproduces the saved v3 predictions voxel by voxel on all 5 development conditions;
+predictions nested in k. Floors muWM + k sigmaWM (TA2 in brackets):
+  pn0 [0.6156] 0.5784 / 0.6095 / 0.6407 / 0.6718     pn3 [0.5654] 0.5276 / 0.5568 / 0.5859 / 0.6151
+  msles1 [0.4692] 0.5073 / 0.5315 / 0.5557 / 0.5799  msles2 [0.5616] 0.5200 / 0.5477 / 0.5754 / 0.6030
+  msles3 [0.5906] 0.5399 / 0.5733 / 0.6066 / 0.6400
+Dice (pn0 / pn3 / msles1 / msles2 / msles3), mean, worst drop on the good cases:
+  none (v3)  0.68538 0.69440 0.01292 0.66211 0.78826   mean 0.56861
+  k3         0.68538 0.69440 0.04163 0.66211 0.78826   mean 0.57436   drop 0          admissible
+  k4         0.68538 0.69440 0.08964 0.66211 0.78826   mean 0.58396   drop 0          admissible
+  k5         0.72157 0.71096 0.26628 0.66738 0.78761   mean 0.63076   drop 0.00065    admissible  SELECTED
+  k6         0.72183 0.70741 0.24490 0.65542 0.76986   mean 0.61988   drop 0.01840    NOT admissible
+RESULT: v4 = v3 with T2 threshold max(TA2, muWM + 5 sigmaWM) (mean development Dice 0.630759 vs 0.568614).
+v3 vs v4 (k5): predicted / FP voxels, detected GT lesions, false components, Dice
+  pn0     3970 / 1406, 33, 10, 0.685  ->  3215 / 788, 24, 3, 0.722
+  pn3     3530 / 1085, 31,  7, 0.694  ->  2975 / 669, 25, 1, 0.711
+  msles1 29301 / 29109, 7, 670, 0.013 ->   269 / 177,  4, 8, 0.266
+  msles2  3363 / 1087, 22,  7, 0.662  ->  3033 / 849, 21, 2, 0.667
+  msles3  9793 / 1951, 23,  1, 0.788  ->  9195 / 1595, 21, 0, 0.788
+```
+
+#### Interpretation
+
+- **With k = 5 the floor exceeds TA level 2 in all five development conditions.** v4 therefore behaves, on development data, as a white-matter-referenced outlier threshold (μWM + 5σWM). The TA level only acts as a lower bound. This was visible in D1 and is stated plainly.
+- **msles1:** the massive over-segmentation disappears (29,301 → 269 predicted voxels; GT 422). The Dice remains modest (0.266), with 4 of 13 lesions detected.
+- **pn0 / pn3 / msles2 improve and msles3 is unchanged** (−0.0007). The cost: fewer lesions are touched (pn0 33 → 24, pn3 31 → 25) while false components fall. The higher Dice comes with fewer small detections (any-overlap rule).
+- **k = 6 was rejected** by the pre-registered non-inferiority (msles3 −0.018).
+- **Caveats:**
+  - all values are in-sample (msles1 revealed the defect and is part of development);
+  - k was chosen on the same data;
+  - the behaviour on a lesion-free brain and under unseen noise is unknown until the reserved test.
+
+Next: v4 freeze (commit + tag, user approval), then the reserved test (8 custom jobs, seed 2).
+
+#### v4 freeze record (2026-10-17, before any reserved-test data exist)
+
+```text
+v4 = generateV4Prediction(rawT1, rawT2, 5): the frozen v3 pipeline (EXP-021, S2 from unfiltered T1,
+  whole-volume D3 diffusion of T2, one 2D diamond-1 opening AND S2, no G1 / recovery) with the T2
+  threshold max(TA level 2, muWM + 5 sigmaWM); muWM / sigmaWM = mean / std (N-1) of the D3-filtered
+  T2 inside S2 AND T1-high (class 3), computed per image, GT-free. k = 5 is the only parameter added.
+Selection: EXP-060 (amendment A3), development pn0, pn3, custom msles1 / msles2 / msles3; mean
+  development Dice 0.630759 (v3 0.568614). In-sample values.
+Hashes: docs/v4_freeze_manifest.csv (14 entries: generateV4Prediction.m, the shared frozen helpers
+  - identical to the Phase-96 hashes -, config.m, the EXP-060 and D1 scripts, the EXP-060 CSVs).
+Version control: commit "fase v4: freeze v4 (EXP-060, k = 5)" + tag v4-frozen (user-approved);
+  no push. v3 / v3-final-frozen unchanged and still the official project result.
+Reserved test (amendment A3) not yet generated at the time of this freeze.
+```

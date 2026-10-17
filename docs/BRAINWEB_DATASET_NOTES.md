@@ -203,6 +203,8 @@ Other tissues are listed in S12. In S12, label 9 is named "MEAT", while S3 calls
 
 **UNRESOLVED** — The two official sources disagree (ICBM versus AI). This is not resolved here. The query needed to reproduce the S16 page is recorded in Section 2.
 
+**UPDATE (Phase 101, 2026-10-17)** — Custom simulations of msles2 (1 mm, 0 % noise, 0 % INU) were compared with the pre-computed msles2 pn0 rf0. The AI template matches closely (T1 correlation 0.990, T2 0.977). The ICBM template gives a clearly different T2 contrast (0.939). The pre-computed data therefore correspond to the AI protocol (see §13.77).
+
 ---
 
 ## 6. Simulation Parameters
@@ -4954,3 +4956,108 @@ These are development results; no held-out data was used. **Phase 70 COMPLETE.**
   - all development scores are in-sample and optimistic;
   - the fixed 3D parameters were not tuned for the noisier held-out levels.
 - **Status:** v3 primary; v2 and v1 secondary locked versions. Next: Phase 96, freeze of v3, then held-out download and Phase 97.
+
+
+### 13.74 Phase 97: held-out final test
+
+- **Precondition:** the Phase-96 freeze was verified before any download (tag `v3-final-frozen` → `96b1612`; 26/26 frozen hashes).
+- **Data:** official BrainWeb msles2, 1 mm, rf0, T1 + T2 at pn1 / pn5 / pn7 / pn9.
+  - Downloaded on 2026-10-16 with the same two-step procedure as the development files.
+  - The download pages read "Noise = 1 / 5 / 7 / 9 %, INU = 0%".
+  - Each file: 14,218,274 bytes, little-endian 0..4095. SHA-256 in `data/raw/msles2/DOWNLOAD_INFO.txt`.
+- **Script:** `experiments/phase97_heldout_test.m` (28/28). All 12 held-out predictions were generated and saved before the GT was loaded.
+  - The v3 predictions use only `generateFinalPrediction(rawT1, rawT2)`.
+  - The v1 / v2 generators first reproduced the frozen v1 / v2 pn0 / pn3 predictions exactly.
+- **Primary results (v3, complete volume):**
+
+| Condition | Dice | Precision | Recall | FP | Predicted / GT volume |
+|---|---:|---:|---:|---:|---:|
+| pn1 | 0.692 | 0.659 | 0.729 | 1,326 | 1.11 |
+| pn5 | 0.715 | 0.748 | 0.685 | 812 | 0.92 |
+| pn7 | 0.408 | 0.280 | 0.750 | 6,766 | 2.68 |
+| pn9 | 0.409 | 0.292 | 0.680 | 5,775 | 2.32 |
+
+  Mean held-out Dice 0.556 (descriptive).
+- **Main finding:** v3 shows good robustness at pn1 and pn5, consistent with development, and a marked degradation at pn7 and pn9. The degradation is mainly a loss of specificity: FP increase about 7–8× while Recall stays stable.
+  - The behaviour is not a gradual decline (pn5 is the best held-out condition).
+  - The automatic TA levels fall and approach each other, which suggests reduced separability of lesion-like intensities within S2. The causal contribution of the thresholding stage is not isolated: D3, the intensity distribution inside S2 and the noisy-T1 S2 may also contribute.
+  - Two distinct problems appear at high noise: the S2 Recall ceiling worsens (0.800 at pn9), and the segmentation inside S2 over-segments.
+- **Summary:** the frozen v3 pipeline generalized well to moderate unseen noise levels but showed a clear robustness limit at higher simulated noise levels, where false-positive over-segmentation became the dominant failure mode.
+- **Secondary versions (Dice, mean):** v1 0.549, v2 0.553, v3 0.556 (development: 0.600, 0.661, 0.690). The development advantage almost disappears. Each version degrades at a different noise level: v1 at pn5, v2 and v3 at pn7 / pn9. v3 remains the primary (fixed before the test).
+- **Lesion-wise caution:** at pn7 / pn9 more GT lesions are "detected" (41 / 44) together with 86 / 102 false components. More lesion detection does not mean a better segmentation here.
+- **Interpretation limits:** same phantom and lesions, only noise changes; four noise configurations, not subjects; "detected" = any overlap; S2 Recall ceiling 0.80–0.89.
+- **Outputs:**
+  - `results/metrics/phase97_{v3_heldout_metrics,frozen_versions_comparison,v3_lesionwise_diagnostics,result_manifest}.csv`;
+  - `results/figures/phase97_{v3_noise_curves,frozen_versions_dice,v3_heldout_overlays}.png`;
+  - `data/processed/phase97_{v1,v2,v3}_{pn1,pn5,pn7,pn9}_prediction.mat`.
+- **Integrity:** no parameter or code changed. The frozen source hashes matched after the test.
+
+
+### 13.75 Phase 99: retrospective ablation study
+
+- **Method:** a synthesis of saved development results only (pn0 + pn3; EXP-026, 030/033, 042, 056–059, Phase 73). No new prediction, MRI, GT or held-out data was used (`experiments/phase99_ablation_study.m`, 14/14).
+  - Each configuration is described by seven blocks.
+  - A comparison counts as a controlled one-factor ablation only if the descriptors differ in exactly that block (verified automatically). Equal configurations in consecutive experiments were linked by equal scores.
+- **Controlled vs historical:** 12 controlled pairs. The 8-milestone development trajectory (EXP-026 → v3) turns out to be a chain of 7 controlled single-block changes. Each step is still measured in the context of the blocks before it, so the contributions are not additive.
+- **Main contributions (DevelopmentScore):**
+
+| Block | Δ | Context |
+|---|---:|---|
+| S2 anatomical support (S0 → S2) | +0.5419 | TA, square 3, G1 |
+| — of which S0 → S1 (exclude T1-low) | +0.3436 | |
+| — of which S1 → S2 (filled T1-high envelope) | +0.1982 | |
+| Morphology M0 → M1 | +0.1295 | after D3, G0 |
+| T2 anisotropic filtering (2D) | +0.0611 | v1 base, R0 |
+| Morphology M2 → M1 | +0.0286 | after D3, G0 |
+| Opening introduction (none → square 3) | +0.0153 | pre-S2 |
+| G1 → G0 | +0.0016 | after D3 + M1 |
+| D2 → D3 | +0.0014 | square 3, G1 (+0.0161 with diamond 1, G0) |
+| G1 introduction | +0.0013 | pre-S2 |
+| Recovery R0 → R1 / R0 → R2 | −0.0983 / −0.6263 | F5 (v2 branch) |
+
+- **Retained in v3:** S2, the T2 anisotropic diffusion (3D), the TA threshold inside S2, and one diamond-1 opening.
+- **Not retained in the final v3** (used in intermediate versions, then replaced): G1, the square-3 opening, D2 diffusion.
+- **Explicitly rejected during development:** Gaussian filtering and TB thresholding (EXP-057 / 058), recovery R1 / R2, multimodal T2 AND PD fusion (EXP-042, −0.000374).
+- **Not introduced:** region growing, not numerically ablated (Phase 73: the prerequisite was not satisfied).
+- **Second-largest increment:** T2 anisotropic filtering is the second largest step of the incremental trajectory after S2 (+0.0611). Across all controlled ablations, diamond 1 vs no morphology after D3 (+0.1295) is larger, so morphology remains essential.
+- **Limitations:**
+  - development data only, so the values are optimistic;
+  - effects are context-dependent: diamond 1 lost to square 3 before filtering, and G1 changed sign;
+  - single phantom.
+
+The held-out behaviour is analysed in Phase 100.
+
+
+### 13.76 Phase 100: noise robustness (satisfied by Phase-97 artifacts)
+
+- **Decision:** the roadmap row ("compare BrainWeb noise levels"; output "performance vs noise curve") is satisfied by existing artifacts. No new processing was done.
+  - The curve is `results/figures/phase97_v3_noise_curves.png`.
+  - A 6-row consolidation, `results/metrics/phase100_noise_robustness_table.csv`, copies the authoritative values with a DEVELOPMENT / HELD-OUT role column.
+- **Threshold under noise:** the automatic TA level 2 falls monotonically (0.616 → 0.414 from pn0 to pn9). The v3 Dice is stable up to 5 % (0.685–0.715) and drops to about 0.41 at 7–9 %, through false positives.
+- **Smoothing (controlled v1 vs v2):**
+  - The anisotropic filtering of T2 strongly improves the Dice up to 5 % (pn5: 0.412 → 0.662).
+  - It is worse than no filter at 7–9 % (pn7: 0.562 vs 0.425).
+- **Caveats:** development points are in-sample; single phantom; only simulated noise varies; the causal contribution of the threshold stage is not isolated.
+
+
+### 13.77 Phase 101: lesion-load robustness (custom simulations msles1 / msles2 / msles3)
+
+- **Data:** three BrainWeb custom simulations with identical settings, where only the phantom varies:
+  - AI template, 1 mm, magnitude;
+  - noise 0 % (seed 1), INU 0 % (field A);
+  - T1 SFLASH TR 35 / flip 45 / TE 10; T2 SE TR 3000 / TE 80.
+  - Crisp GT: msles1 / msles3 downloaded on 2026-10-17; msles2 is the existing model. Label 10 = MS lesion was verified: the voxel counts equal the official volumes 422 / 3512 / 10104 mm³.
+  - Provenance: `data/raw/brainweb_custom/phase101/REQUESTS.txt` and `results/metrics/phase101_dataset_provenance.csv`. The requester e-mail is not stored in the project.
+- **Protocol (resolves §5.1):** the custom ICBM T2 differs in contrast from the pre-computed msles2 pn0 (correlation 0.939). The custom AI data are close to it (T1 0.990, T2 0.977). AI was used; the ICBM files are archived and not used.
+- **Results (v3, complete volume):**
+
+| Phantom | GT voxels | Predicted | Dice | Precision | Recall | Predicted / GT | GT inside S2 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| msles1 (mild) | 422 | 29,301 | 0.013 | 0.007 | 0.455 | 69.4 | 0.713 |
+| msles2 (moderate) | 3,512 | 3,363 | 0.662 | 0.677 | 0.648 | 0.958 | 0.884 |
+| msles3 (severe) | 10,104 | 9,793 | 0.788 | 0.801 | 0.776 | 0.969 | 0.931 |
+
+- **Main finding:** v3 is consistent at moderate and severe loads but fails at the mild load through massive over-segmentation.
+  - The TA rule (highest of three classes inside S2) appears to presuppose a sizeable lesion population: in msles1 the two T2 levels nearly coincide.
+  - This interpretation was not isolated. The same behaviour would be expected for a lesion-free brain, which is an important limitation for the discussion.
+- **Limitations:** same anatomy, not independent patients; noise-free only; custom vs pre-computed domains are close but not identical.
