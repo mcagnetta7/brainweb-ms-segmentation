@@ -10592,8 +10592,9 @@ Integrity: Phase-96 / 97 / 98 / 99 hashes unchanged before and after; inputs unc
 - **Moderate and severe loads:** v3 behaves consistently. Custom msles2 gives Dice 0.662, in line with the pre-computed development value 0.685. The severe phantom gives the highest Dice (0.788), with the predicted volume within 3–4 % of the GT.
 - **Mild load is a severe failure, through Precision.** v3 predicts 29,301 voxels for 422 lesion voxels (69× the GT; Dice 0.013). The FP are scattered parenchymal clusters (overlay, k = 70).
   - The two automatic T2 levels inside S2 almost coincide (gap 0.036, vs 0.118 for msles2 and 0.144 for msles3).
-  - This is compatible with a structural property of the TA rule: the highest of three multithresh classes inside S2 is taken as "lesion", which presupposes a sufficiently large lesion-intensity population. With very few lesion voxels, the highest class falls on normal-appearing tissue.
-  - The same would be expected for a lesion-free brain. This is an interpretation; it was not isolated experimentally.
+  - The TA rule depends implicitly on the intensity distribution inside S2. `multithresh` only partitions intensities; it is the pipeline that assigns the highest class to "lesion". When the lesion load is very low, the highest intensity class does not necessarily represent a distinct lesion population and may include high-intensity normal tissue. In msles1 this is associated with marked over-segmentation.
+  - This suggests a structural limitation of the "highest class = lesion" interpretation as lesion prevalence varies. The same mechanism could also produce false positives in the absence of lesions; this hypothesis is tested separately on the reserved normal phantom.
+  - (Wording revised on 2026-10-17 after review; the data and conclusions are unchanged.)
 - **Two further effects of lesion load:** the S2 coverage of the GT increases with load (0.713 / 0.884 / 0.931), and the median lesion size increases (8 / 7 / 20).
 - **The automatic thresholds behave as expected for a shared anatomy:** brain-mask and T1 thresholds are almost identical across phantoms; only the TA levels change.
 - **Limitations:**
@@ -10706,7 +10707,7 @@ v3 vs v4 (k5): predicted / FP voxels, detected GT lesions, false components, Dic
 
 #### Interpretation
 
-- **With k = 5 the floor exceeds TA level 2 in all five development conditions.** v4 therefore behaves, on development data, as a white-matter-referenced outlier threshold (μWM + 5σWM). The TA level only acts as a lower bound. This was visible in D1 and is stated plainly.
+- **With k = 5 the floor exceeds TA level 2 in all five development conditions.** v4 therefore behaves, on development data, as an outlier threshold referenced to the image-derived WM-like region (S2 ∩ T1-high, not a GT white-matter mask): μref + 5σref. The TA level only acts as a lower bound. This was visible in D1 and is stated plainly.
 - **msles1:** the massive over-segmentation disappears (29,301 → 269 predicted voxels; GT 422). The Dice remains modest (0.266), with 4 of 13 lesions detected.
 - **pn0 / pn3 / msles2 improve and msles3 is unchanged** (−0.0007). The cost: fewer lesions are touched (pn0 33 → 24, pn3 31 → 25) while false components fall. The higher Dice comes with fewer small detections (any-overlap rule).
 - **k = 6 was rejected** by the pre-registered non-inferiority (msles3 −0.018).
@@ -10731,4 +10732,115 @@ Hashes: docs/v4_freeze_manifest.csv (14 entries: generateV4Prediction.m, the sha
 Version control: commit "fase v4: freeze v4 (EXP-060, k = 5)" + tag v4-frozen (user-approved);
   no push. v3 / v3-final-frozen unchanged and still the official project result.
 Reserved test (amendment A3) not yet generated at the time of this freeze.
+```
+
+#### v4 secondary analysis on the already-seen held-out pn1 / pn5 / pn7 / pn9 (2026-10-17)
+
+```text
+experiments/v4_heldout_secondary_check.m; v4 verified frozen (tag v4-frozen 2525dde, 14 hashes)
+before and after. These levels were used for the v3 test, NOT for the v4 design: secondary evidence,
+not an independent test. Floor muWM + 5 sigmaWM active in all four (0.628 / 0.556 / 0.544 / 0.554 vs
+TA2 0.604 / 0.532 / 0.443 / 0.414).
+  cond  Dice v3 -> v4        Precision      Recall         FP            detected (of 59)  false comps
+  pn1   0.69226 -> 0.72274   0.659 -> 0.760 0.729 -> 0.689 1326 -> 763   32 -> 23          9 -> 4
+  pn5   0.71482 -> 0.72065   0.748 -> 0.836 0.685 -> 0.634  812 -> 438   24 -> 19          3 -> 0
+  pn7   0.40787 -> 0.66308   0.280 -> 0.896 0.750 -> 0.526 6766 -> 214   41 -> 14         86 -> 0
+  pn9   0.40894 -> 0.49272   0.292 -> 0.953 0.680 -> 0.332 5775 ->  58   44 ->  9        102 -> 0
+  mean Dice (descriptive): v3 0.5560, v4 0.6498. SMALL detected v3 5/3/13/16 -> v4 3/2/1/0.
+Interpretation: the WM-referenced floor stays near 0.55 while TA2 falls with noise, so v4 also removes
+the Phase-97 high-noise false-positive collapse; at high noise v4 becomes conservative (Recall 0.33 and
+9 lesions at pn9). The v3 primary designation of Phase 97 is unchanged; v4 adoption still depends on
+the reserved test (amendment A3).
+Outputs: results/metrics/v4_secondary_heldout_comparison.csv, data/processed/v4_secondary_*_prediction.mat.
+```
+
+---
+
+### Protocol amendment A4 (2026-10-17): optimisation on all seen data
+
+```text
+Decision (user): the project goal is the best possible metrics on the cases already analysed, so
+development continues on ALL seen data. This does not rewrite earlier phases.
+Rules:
+  1. Development set from now on (all already seen): pre-computed msles2 pn0, pn1, pn3, pn5, pn7, pn9
+     (rf0, 1 mm) and custom AI msles1 / msles2 / msles3 (noise 0). Every metric obtained on them from
+     now on is IN-SAMPLE (optimised on the same data) and is reported as such.
+  2. Official records stay as they are: v3 = Phase-96 freeze and Phase-97 test result; v4 = tag v4-frozen.
+  3. The reserved test of amendment A3 (custom AI, seed 2: normal 0 % / 3 %, msles1 3 %, msles3 3 %)
+     stays UNSEEN and is not generated; it remains available as an optional external check of the
+     final version.
+  4. Each development step is still one pre-registered experiment with base = previous version voxel
+     by voxel, so the effect of every change stays traceable.
+```
+
+### EXP-061 — v5 development: hysteresis growth from the v4 cores (amendment A4)
+
+#### Pre-registration (written before EXP-061 was run)
+
+```text
+Base: frozen v4 (v3 + T2 threshold max(TA2, muWM + 5 sigmaWM)). Development: the 9 conditions of A4.
+Notation (per image, GT-free, as in v4): T2f = D3-filtered T2; muWM / sigmaWM = mean / std of T2f in
+  S2 AND T1-high; high = max(TA2, muWM + 5 sigmaWM) (the v4 threshold).
+Cores: C = S2 AND T2f > high; M1: one 2D diamond-1 opening per slice, AND S2 (= v4 output);
+  M0: no opening (cores used directly).
+Growth (hysteresis = morphological reconstruction, 3D, 26-connectivity):
+  L0: none (output = cores);  L4 / L3: low = muWM + 4 / 3 sigmaWM;
+  output = imreconstruct(cores, (Z AND T2f > low) OR cores, 26), zone Z = S2 or S1.
+Configurations (Z is irrelevant without growth): L0_M1 (= v4), L0_M0, and L4 / L3 x Z2 / Z1 x M1 / M0
+  -> 10 configurations x 9 conditions = 90 predictions, all saved before any GT is loaded.
+Base check: L0_M1 must equal the saved v4 predictions voxel by voxel (pn0, pn3, msles1-3: EXP-060 k5;
+  pn1 / 5 / 7 / 9: v4 secondary analysis), otherwise TECHNICALLY BLOCKED.
+Selection: objective = mean complete-volume Dice over the 9 conditions; winner = highest objective, only
+  if strictly higher than v4; exact tie -> lower complexity (growth +1, zone S1 +1), then ID.
+Reported for every configuration: Dice per condition, Precision, Recall, detected GT lesions, false
+  predicted components. A higher Dice obtained with fewer detected lesions is stated explicitly.
+Declared failure modes: growth into S1 may re-introduce GM / cortical voxels connected to cores; M0 may
+  keep noise specks at high noise; L3 may leak along partial-volume rims.
+Technique status: ALLOWED_TECHNIQUES 9.1 (note added with this pre-registration).
+```
+
+#### EXP-061 results (2026-10-17; experiments/exp061_v5_tuning.m, PASS 6/6; in-sample)
+
+```text
+Base L0_M1 = saved v4 predictions voxel by voxel on all 9 conditions; nesting verified.
+Mean Dice over the 9 seen conditions (pn0 pn1 pn3 pn5 pn7 pn9 msles1 msles2 msles3):
+  L0_M1 (v4) 0.63922 | L0_M0 0.59840 | L4_Z2_M1 0.54764 | L4_Z2_M0 0.52461 | L3_Z2_M1 0.43365 |
+  L3_Z2_M0 0.40978 | L4_Z1_M1 0.20160 | L4_Z1_M0 0.15208 | L3_Z1_M1 0.09272 | L3_Z1_M0 0.05199
+RESULT: no configuration beats v4 -> no v5; v4 remains the best version.
+Per-condition pattern:
+  - growth inside S2 (L4_Z2_M1) loses at low noise (pn0 0.722 -> 0.514) but helps at high noise
+    (pn7 0.663 -> 0.690, pn9 0.493 -> 0.669);
+  - growth into S1 leaks massively at low noise (e.g. L3_Z1_M0 at pn0: 550,322 voxels, Dice 0.013) yet
+    gives the best pn7 / pn9 values (L4_Z1_M1 0.710 / 0.717);
+  - removing the opening (L0_M0) adds false components (3,161 summed) and loses on average.
+Interpretation: in low-noise images sigmaWM is small, so muWM + 3-4 sigmaWM falls inside GM / partial-
+  volume intensities that are connected to the cores (failure mode declared for L3 and Z1); at high noise
+  the same rule recovers the lesion extent. The best growth setting is therefore noise-dependent; choosing
+  it per noise level on these 9 cases would be noise-specific tuning on the evaluation data, so it is not
+  pursued. EXP-061 is recorded as a negative result.
+Outputs: results/metrics/exp061_{grid_results,ranking}.csv, data/processed/exp061_candidates/.
+```
+
+---
+
+### DEVELOPMENT CLOSED + RESERVED v4 TEST — evaluation protocol (2026-10-17; written before any reserved data exist)
+
+```text
+Development is CLOSED after EXP-061: no further experiment, no change to v4 whatever the result.
+Data (declared in A3, unchanged): BrainWeb custom AI, 1 mm, magnitude, INU 0 % (field A), seed 2, T1 + T2:
+  (a) normal, noise 0 %; (b) normal, noise 3 %; (c) msles1, noise 3 %; (d) msles3, noise 3 %.
+  Crisp GT: phantom_1.0mm_normal_crisp (downloaded with the test data; expected: no label 10),
+  msles1 / msles3 existing files.
+Versions: v4 (tag v4-frozen) = PRIMARY; v3 (tag v3-final-frozen) = reference; both frozen, unchanged.
+  All predictions saved before any GT is loaded.
+Metrics:
+  - lesion phantoms (c, d): complete-volume Dice, IoU, Precision, Recall, Specificity, volumes,
+    TP / FP / FN / TN, lesion-wise (Phase-93 rule).
+  - normal phantom (a, b), |GT| = 0: Dice, Recall and Precision are NOT reported (not informative; no
+    0/0 convention applied). Reported: predicted voxels (= FP voxels), FP volume (mm3), FP fraction of
+    the brain mask and of S2, number of predicted (= false) components, Specificity.
+  - first verify that the normal crisp GT has no label 10; if it has, report the count and treat it
+    as a lesion phantom.
+No pass / fail threshold; results reported as observed. Wording of the v4 reference: "WM-like region
+  S2 AND T1-high (image-derived)", not a GT white-matter mask.
 ```

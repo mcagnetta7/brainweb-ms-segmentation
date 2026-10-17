@@ -5058,6 +5058,6 @@ The held-out behaviour is analysed in Phase 100.
 | msles3 (severe) | 10,104 | 9,793 | 0.788 | 0.801 | 0.776 | 0.969 | 0.931 |
 
 - **Main finding:** v3 is consistent at moderate and severe loads but fails at the mild load through massive over-segmentation.
-  - The TA rule (highest of three classes inside S2) appears to presuppose a sizeable lesion population: in msles1 the two T2 levels nearly coincide.
-  - This interpretation was not isolated. The same behaviour would be expected for a lesion-free brain, which is an important limitation for the discussion.
+  - The TA rule depends implicitly on the intensity distribution inside S2. At very low lesion load the highest `multithresh` class does not necessarily represent a distinct lesion population and may include high-intensity normal tissue (in msles1 the two T2 levels nearly coincide). This is a structural limitation of the "highest class = lesion" interpretation as lesion prevalence varies.
+  - The same mechanism could produce false positives without lesions; this hypothesis is tested separately on the reserved normal phantom.
 - **Limitations:** same anatomy, not independent patients; noise-free only; custom vs pre-computed domains are close but not identical.

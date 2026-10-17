@@ -76,7 +76,7 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
 - **Phase 101 — lesion-load robustness: COMPLETE** (2026-10-17; `experiments/phase101_lesion_load_robustness.m` PASS 21/21; notes §13.77).
   - Data: matched BrainWeb custom simulations (AI template, 1 mm, 0 % noise, 0 % INU) of msles1 / msles2 / msles3. The ICBM variants were obtained but not used.
   - **v3 Dice:** mild 0.013 (29,301 predicted vs 422 GT voxels), moderate 0.662, severe 0.788. Primary v3 / D3_M1_G0 unchanged.
-  - **Robustness dimension:** simulated MS lesion load. The TA rule fails when the lesion population is very small.
+  - **Robustness dimension:** simulated MS lesion load. At very low lesion load the highest TA class includes high-intensity normal tissue, causing marked over-segmentation.
   - Outputs: `results/metrics/phase101_*.csv` (manifest 19 entries), `results/figures/phase101_*.png`.
 - **Amendment A3 (2026-10-17): post-test development of v4 opened**, to correct the mild-lesion-load defect.
   - v3 remains the official result.
@@ -87,7 +87,10 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
   - **EXP-060 done (PASS 8/8): v4 = k5**, threshold max(TA2, μWM + 5σWM).
     - Mean development Dice 0.631 vs 0.569 for v3. msles1 0.013 → 0.266 (29,301 → 269 voxels); pn0 0.722, pn3 0.711, msles2 0.667, msles3 0.788.
     - With k = 5 the floor is active in all development cases. In-sample values.
-  - **Next:** v4 freeze (commit + tag, waiting for user approval), then the reserved test (8 custom jobs, seed 2).
+  - **v4 frozen** (commit `2525dde`, tag `v4-frozen`).
+    - Secondary check on the seen pn1 / 5 / 7 / 9: v4 Dice 0.723 / 0.721 / 0.663 / 0.493 vs v3 0.692 / 0.715 / 0.408 / 0.409. v4 also removes the high-noise false-positive collapse.
+  - **Amendment A4:** development continues on all 9 seen cases (in-sample); the reserved test is kept unseen.
+  - **EXP-061 (hysteresis growth from the v4 cores): negative.** No configuration beats v4 (mean in-sample Dice 0.639). The best growth setting depends on the noise level. **v4 is the current best version.**
 - **Phase 102 — runtime measurement:** not started (after v4, or when the user decides).
 - **Phase 95 supplementary experiment (EXP-057), complete — CURRENT SELECTED DEVELOPMENT CONFIGURATION:**
   - **Search:** 36 configurations / 72 predictions on `pn0`/`pn3` (T1-derived support S0/S1/S2 × T2 threshold TA/TB inside the support × opening M0/M1/M2 × G0/G1), all generated before the GT. The baseline S0_TA_M2_G1 reproduces the EXP-056 winner voxel by voxel.

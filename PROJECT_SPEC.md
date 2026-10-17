@@ -916,7 +916,7 @@ Recovery reduced the score. The frozen parameters are unchanged.
 
 **Phase 101 (lesion-load robustness):** frozen v3 on matched BrainWeb custom simulations of msles1 / msles2 / msles3 (AI, 1 mm, 0 % noise, 0 % INU).
 - **Dice:** 0.013 / 0.662 / 0.788.
-- The automatic TA rule presupposes a sizeable lesion population: at mild load it over-segments massively.
+- At mild load the highest TA class does not necessarily represent a distinct lesion population and includes high-intensity normal tissue, producing marked over-segmentation. This is a structural limitation of "highest class = lesion" as lesion prevalence varies.
 - These are simulated lesion burdens on one anatomy, not independent-patient generalization. The parameters are unchanged.
 
 **Data:**

@@ -593,6 +593,22 @@ Region growing is optional and is not part of the initial baseline.
 
 Project-status note (Phase 73, 2026-10-12): allowed and course-supported, but not activated, because the project-specific justification (high-confidence lesion cores with incomplete extent) was not satisfied.
 
+### 9.1 Hysteresis growth from high-confidence cores (EXP-061, approved by the user on 2026-10-17)
+
+Hysteresis thresholding is not named separately in this document. It is the combination of three allowed elements:
+- two global intensity thresholds (§5);
+- morphological reconstruction, `imreconstruct` (§6.6);
+- equivalently, region growing with automatic seeds and an explicit intensity predicate (§9).
+
+How it is used:
+- **Seeds:** the v4 lesion cores (high threshold referenced to the image-derived WM-like region S2 ∩ T1-high), computed automatically and without GT.
+- **Predicate:** filtered T2 above a lower threshold referenced to the same WM-like region, inside a declared support (S2 or S1).
+- **Connectivity:** 26 (3D). This is the volumetric extension of a 2D course operation, with the same status as the earlier 3D project extensions (EXP-021 mask, Phase-72 components, EXP-058 reconstruction).
+
+The thresholds and supports are fixed in the EXP-061 pre-registration.
+
+The Phase-73 prerequisite for region growing (reliable cores whose extent is incomplete) is now met: the v4 cores have very few false positives, while Recall falls at high noise.
+
 ---
 
 ## 10. Edge Detection
