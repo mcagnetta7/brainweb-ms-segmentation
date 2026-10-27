@@ -10844,3 +10844,257 @@ Metrics:
 No pass / fail threshold; results reported as observed. Wording of the v4 reference: "WM-like region
   S2 AND T1-high (image-derived)", not a GT white-matter mask.
 ```
+
+### RESERVED v4 TEST — results (2026-10-17; one-shot; experiments/v4_reserved_test.m, PASS 6/6)
+
+```text
+Integrity: tags v4-frozen (2525dde) and v3-final-frozen (96b1612); 14 + 26 frozen hashes unchanged
+before and after; reserved files = download hashes; 8 predictions saved before any GT; normal GT has
+no label 10 (max label <= 9). Manifest: results/metrics/v4_reserved_test_manifest.csv (20 entries).
+Automatic values (v4): TA2 / floor muRef + 5 sigmaRef:
+  normal_n0 0.4670 / 0.5525; normal_n3 0.4651 / 0.5617; msles1_n3 0.4670 / 0.5644; msles3_n3 0.5804 / 0.6143
+LESION-FREE PHANTOM (|GT| = 0; protocol metrics):
+  condition   version  predicted = FP voxels  FP fraction brain mask  FP fraction S2  components  Specificity
+  normal_n0   v4                  172             0.000101              0.000243          10       0.99998
+  normal_n0   v3               31,917             0.018805              0.045105         723       0.99551
+  normal_n3   v4                   30             0.000018              0.000042           5       1.00000
+  normal_n3   v3               17,486             0.010611              0.024219         455       0.99754
+LESION PHANTOMS (noise 3 %, seed 2):
+  condition   version  GT      pred    TP     FP     FN     Dice     Precision  Recall   detected / false comps
+  msles1_n3   v4         422     164    100     64    322   0.34130  0.60976   0.23697   4 of 13 / 2
+  msles1_n3   v3         422  16,891    209  16,682   213   0.02414  0.01237   0.49526   7 of 13 / 399
+  msles3_n3   v4      10,104   8,211  7,079  1,132  3,025   0.77303  0.86214   0.70061  18 of 39 / 0
+  msles3_n3   v3      10,104   9,525  7,729  1,796  2,375   0.78751  0.81144   0.76494  23 of 39 / 0
+```
+
+#### Interpretation
+
+- **What "PASS (6)" means:** the protocol and integrity checks passed. No performance threshold was pre-registered, so v4 is not described as "passing" in a performance sense. The reserved evaluation was completed correctly and provides tuning-independent evidence of the greater robustness of v4.
+- **Lesion-free brain:** v3 produces 31,917 / 17,486 false-positive voxels in 723 / 455 components; v4 produces 172 / 30 (−99.46 % / −99.83 %). The modification designed for the Phase-101 mechanism (with no lesion population, the highest class can cover high-intensity normal tissue) largely corrects this behaviour on reserved data. This supports, but does not mathematically prove, that mechanism. Overlap and lesion-detection metrics were not reported for the lesion-free phantom, according to the pre-registered evaluation protocol: a reporting choice made in advance, not a claim that such metrics are undefinable.
+- **Mild load with unseen noise:** v4 0.341 vs v3 0.024 (FP 16,682 → 64). v4 corrects the severe over-segmentation of v3, at the price of greater conservativeness and lower sensitivity (Recall 0.24, 4 of 13 lesions detected). The mild case is not "solved" and remains one of the main limitations of the final algorithm.
+- **Severe load with unseen noise:** v4 0.773 vs v3 0.788 (−0.014). v4 is more precise (0.862 vs 0.811) but has lower Recall (0.701 vs 0.765).
+- **Overall:** the v4 correction generalizes to the reserved conditions (unseen seed and noise realization, the lesion-free phantom). The trade-off seen in development persists: fewer false positives, lower Recall on small and faint lesions.
+- **v4 does not dominate v3 on every metric:** the WM-like floor shifts the operating point towards a more conservative segmentation (higher Precision, fewer FP, lower Recall).
+- **Limitations:** same BrainWeb anatomy, simulated data, four conditions; not independent patients.
+- **Final status:**
+  - v3 is the prospectively tested pipeline of the original protocol (Phase 97); its test revealed the failure modes.
+  - v4 is the final improved pipeline, frozen and then evaluated on this one-shot reserved test.
+  - The reserved results are FINAL: no v5 and no further tuning. Changing the algorithm after looking at them would turn this last independent check into development data.
+
+---
+
+### PHASE 102 — RUNTIME MEASUREMENT: SKIPPED / NOT REQUIRED FOR CORE PROJECT (2026-10-17)
+
+```text
+User decision: no real-time or computational-efficiency requirement was defined; no timing measured.
+```
+
+### PHASE 103 — AUTOMATED EXPERIMENT RUNNER (2026-10-17; automation only, no EXP id)
+
+```text
+Runner: experiments/phase103_experiment_runner.m - one MATLAB command, PASS 13/13.
+Design: explicit registry of 13 cases with declared roles (6 pre-computed msles2 pn0 / pn1 / pn3 / pn5 /
+  pn7 / pn9; 3 custom AI seed-1 msles1 / msles2 / msles3; 4 reserved seed-2 cases replayed for
+  reproducibility) x explicit registry of 2 frozen versions (v3 = generateFinalPrediction, D3_M1_G0,
+  tag v3-final-frozen; v4 = generateV4Prediction(..., 5), tag v4-frozen) = 26 combinations, executed by
+  ONE generic loop; no case-specific parameter, no branch on results, k = 5 fixed.
+Integrity before / after: tags; frozen v3 (26) and v4 (14) hashes; Phase-97 (27), Phase-98 (32),
+  Phase-101 (19) and reserved-test (20) manifests; Phase-99 outputs; 39 registry input references
+  (13 cases x T1 / T2 / GT = 30 distinct physical files: 26 MRI + 4 GT; the runner check label says
+  "files") vs recorded SHA-256;
+  config.m unchanged. Predictions kept in memory; no historical file overwritten; no figure; no timing.
+Reproduction of existing evidence: all 26 combinations equal the saved predictions voxel by voxel and the
+  authoritative TP / FP / FN (Phase 96 / 97 / 101, EXP-060, v4 secondary analysis, reserved test): 26 / 26.
+Normal-phantom convention preserved (overlap metrics NaN by protocol).
+Outputs: results/metrics/phase103_runner_metrics.csv (26 rows), phase103_case_summary.csv (13 rows,
+  descriptive v3 vs v4), phase103_runner_verification.txt, phase103_runner_manifest.csv (4 entries).
+A first run passed all checks but stopped while writing the manifest (char concatenation); fixed
+  (string array) and rerun; results identical.
+Phase 103 is automated reproduction of existing evidence, not new independent evidence. Phase 104 not started.
+```
+
+---
+
+### PHASE 104 — RESULT EXPORT: FULFILLED BY PHASE 103 (2026-10-17)
+
+```text
+The Phase-103 runner exports the consolidated CSVs (26-row metrics, 13-row case summary, verification
+log, manifest); predictions are archived as MAT files by the phases that produced them.
+```
+
+### PHASES 105–107 — FINAL 2D VISUALIZATION (2026-10-17; visualization only, no EXP id)
+
+```text
+Script: experiments/phase105_107_final_2d_visualization.m, PASS 10/10. New helper (visualization only):
+  src/visualization/overlayErrorMapOnMRI.m; Phases 105 / 106 reuse overlayMaskBoundaryOnMRI.
+Final version shown: v4 / V4_K5 (tag v4-frozen, 2525dde) only; saved v4 predictions loaded (no
+  segmentation rerun): pn3 -> exp060_candidates/exp060_k5_pn3.mat; reserved cases -> v4test_v4_*.mat.
+Predefined cases (no cherry-picking): pn3 (moderate, DEVELOPMENT_REFERENCE), reserved_msles1_n3 (mild,
+  RESERVED_TEST_REPLAY), reserved_msles3_n3 (severe, RESERVED_TEST_REPLAY); optional diagnostic
+  reserved_normal_n3. Visualization set only, not a controlled lesion-load comparison.
+Display slice rule: k = argmax_k of GT lesion voxels (first maximum = smallest k), chosen after
+  segmentation and for display only; normal phantom: argmax_k of v4 predicted voxels (display only,
+  worst residual FP slice). The same slice is used in the Phase-105, 106 and 107 figures.
+  Selected slices: pn3 k = 102; reserved_msles1_n3 k = 70; reserved_msles3_n3 k = 104; normal k = 83.
+  Slice counts (GT / pred / TP / FP / FN): pn3 224 / 255 / 205 / 50 / 19; msles1 40 / 10 / 8 / 2 / 32;
+  msles3 557 / 542 / 485 / 57 / 72; normal 0 / 5 / 0 / 5 / 0.
+Display convention (project, Phases 31-34): slice transposed for display only, YDir normal, no flip /
+  rotation; T2 raw grayscale, display range [min max] of the volume (display only).
+Figures: results/figures/phase105_v4_mri_prediction.png (v4 prediction, yellow fill alpha 0.45 + boundary),
+  phase106_v4_mri_ground_truth.png (GT label 10, cyan fill alpha 0.45 + boundary),
+  phase107_v4_tp_fp_fn.png (TP green, FP red, FN blue, alpha 0.6, TN not shown),
+  phase107_v4_normal_false_positive_diagnostic.png (normal phantom, all predicted voxels = FP).
+  Boundaries derived from the unchanged binary masks; no dilation / erosion / smoothing of masks.
+Checks: TP / FP / FN pairwise disjoint, TP|FP = prediction, TP|FN = GT, slice counts consistent; v4 frozen
+  hashes, predictions, MRI, GT, Phase-103 outputs and config.m unchanged.
+Index: results/metrics/phase105_107_visualization_index.csv (4 rows); manifest:
+  results/metrics/phase105_107_figure_manifest.csv. Descriptive only: no new metric, no tuning.
+Note: the script check label says "nothing saved but figures / index"; precisely, the script saves only
+  figures, the visualization index and the figure manifest (label not edited, to keep the script hash
+  recorded in the figure manifest).
+Visual observations (display slices, not representative of average performance): pn3 FP mostly thin
+  rims at lesion borders; mild case k = 70 mostly FN along the periventricular lesion (Recall limit of v4);
+  severe case large lesions well covered, small FN regions; normal k = 83 one small FP cluster near the
+  ventricle trigone.
+```
+
+
+### PHASES 108–109 — FINAL 3D VISUALIZATION (2026-10-17; visualization only, no EXP id)
+
+```text
+Canonical script: experiments/phase108_109_final_3d_visualization.m, PASS 11/11. New helper (visualization
+  only): src/visualization/renderMask3DSurface.m (isosurface at 0.5 of the unchanged binary mask).
+Final version shown: v4 / V4_K5 (tag v4-frozen, 2525dde) only; same saved v4 predictions, GT files and
+  three cases as Phases 105-107 (pn3, reserved_msles1_n3, reserved_msles3_n3); no segmentation rerun.
+  Normal phantom not included (FP diagnostic already in Phase 107).
+Masks: complete 3D volumes 181 x 217 x 181, logical; GT = label 10, not masked.
+Coordinate convention: X = array dimension 1, Y = dimension 2, Z = dimension 3 (voxel indices, 1 mm
+  isotropic, daspect [1 1 1]). isosurface maps columns to X, so the first two dimensions are swapped
+  (permute [2 1 3]) in a display-only copy, padded with one voxel of zeros so that surfaces are closed;
+  the scientific masks are not permuted, modified or saved. Verified: for every rendered surface the
+  vertex bounding box equals the voxel bounding box +/- 0.5 along (dim 1, dim 2, dim 3).
+  No anatomical left / right labels (direction of +X not resolved).
+View: fixed MATLAB view(3) (azimuth -37.5, elevation 30), orthographic, chosen before rendering and
+  identical for every case and figure; full-volume limits [0.5 181.5] x [0.5 217.5] x [0.5 181.5];
+  one headlight camlight, gouraud, dull material. No case-specific cropping.
+No mask smoothing, mesh smoothing, interpolation, downsampling or component filtering: every predicted
+  and GT voxel contributes to the surfaces. Empty masks are skipped without geometry (none occurred).
+Figures (250 dpi):
+  results/figures/phase108_v4_3d_prediction.png (v4 prediction, yellow [1 0.85 0], alpha 0.9);
+  phase109_v4_3d_gt_prediction_comparison.png (GT cyan [0 0.9 0.9] + prediction yellow, alpha 0.45);
+  phase109_v4_3d_tp_fp_fn.png (TP = P&GT green, FP = P&~GT red, FN = ~P&GT blue, alpha 0.6).
+Consistency (not a new evaluation): prediction / GT / TP / FP / FN voxels and 26-connected component
+  counts equal Phase 103 (v4): pn3 2975 / 3512 / 2306 / 669 / 1206, components 30 / 59;
+  msles1 164 / 422 / 100 / 64 / 322, 8 / 13; msles3 8211 / 10104 / 7079 / 1132 / 3025, 25 / 39.
+  TP / FP / FN pairwise disjoint, TP|FP = prediction, TP|FN = GT.
+Integrity: v4 frozen hashes, predictions, GT, Phase-103 and Phase-105/107 outputs, config.m unchanged.
+Index: results/metrics/phase108_109_visualization_index.csv (3 rows); manifest:
+  results/metrics/phase108_109_figure_manifest.csv. No new metric, no tuning, no new version.
+Optional brain-context variant (user request, after the canonical figures were complete):
+  experiments/phase108_109_brain_context_3d.m, PASS 8/8. Adds a grey, very transparent (alpha 0.07)
+  surface of the automatic EXP-021 brain mask, recomputed from T1 only with the frozen v4 helpers
+  (initialSupportMask + brainMask3DErodeSelectDilate sphere 3, 26); no GT, no lesion segmentation, mask
+  not saved. Brain-mask voxels equal Phase-103 brainMaskVoxels (1,668,366 / 1,647,905 / 1,656,034).
+  Same lesion surfaces, colors, view and limits; canonical figures unchanged (manifest verified).
+  Figures: results/figures/phase108_v4_3d_prediction_brain_context.png,
+  phase109_v4_3d_gt_prediction_brain_context.png; index / manifest:
+  results/metrics/phase108_109_brain_context_{index,manifest}.csv. pn3 T1 SHA-256 recorded in the
+  script (AC7C6136...B8FE; not listed in an earlier manifest).
+Visual observations (descriptive only): lesions lie inside the brain volume, mainly around the lateral
+  ventricles, with GT and prediction surfaces spatially coincident under the validated mapping; the mild
+  case shows mostly GT-only (FN) components and two small isolated FP clusters; in the severe case FP
+  appears as thin layers on the borders of the large confluent lesions.
+```
+
+
+### PHASES 118–120 — FINAL RESULTS PACKAGE (2026-10-17; no new experiment, no EXP id)
+
+```text
+Script: experiments/phase118_120_final_results_package.m, PASS 17/17. No segmentation rerun, no metric
+  recomputed from GT, no global / cross-role mean, no parameter change, no case removed.
+Integrity before / after: v4-frozen -> 2525dde (14 hashes), v3-final-frozen -> 96b1612 (26 hashes);
+  Phase-97 / 98 / 101 / reserved-test / 103 / 105-107 / 108-109 / brain-context manifests valid; Phase-99
+  outputs checked by content (last trajectory step = Phase-96 v3 reference); config.m unchanged.
+Phase 118 (scientific result freeze): docs/FINAL_RESULTS_FREEZE.md; 52 authoritative sources hashed in
+  results/metrics/phase118_final_results_source_manifest.csv (unchanged after the run). Phase-99 outputs,
+  EXP-060 / EXP-061 / v4-D1 / v4-secondary CSVs, Phase-96 reference, Phase-100 table and
+  exp060_k5_pn3.mat are hashed here for the first time. Not the delivery tag (Phases 116-117 deferred).
+Evidence hierarchy: A FINAL RESERVED TEST (v4; normal_n0, normal_n3, msles1_n3, msles3_n3, seed 2);
+  B SEEN DURING v4 DEVELOPMENT (v4; pn0, pn1, pn3, pn5, pn7, pn9, custom seed-1 msles1/2/3; not
+  independent); C ORIGINAL v3 PROSPECTIVE TEST (v3; pn1, pn5, pn7, pn9, Phase 97).
+Phase 119 tables (results/metrics/):
+  phase119_main_results_v4_reserved.csv (primary, 4 rows, v4 only; values = v4_reserved_test_results.csv,
+    cross-checked with Phase 103; volumeErrorPercent taken from the Phase-103 replay of the same saved
+    predictions because the reserved-test CSV does not report it, source column included; normal cases:
+    Dice / IoU / Precision / Recall / volume error NaN, FP 172 / 30, false components 10 / 5);
+  phase119_main_results_v4_reserved_report.csv (presentation rounding only);
+  phase119_v4_seen_context.csv (9 rows, exact Phase-103 roles, independentEvidence = NO; cross-checked
+    with EXP-060 k = 5 and the v4 secondary comparison);
+  phase119_v3_original_prospective_test.csv (4 rows, exactly Phase 97);
+  phase119_full_results_audit.csv (26 Phase-103 rows + evidenceStatus).
+  Read-back equal to the sources. Note: MATLAB renames the column "case" to "case_" on read
+  (reserved keyword); harmless warning, values unaffected.
+Phase 120 figures: results/figures/phase120_final_2d_overview.png (3 x 4: original T2, T2 + GT cyan,
+  T2 + v4 yellow, T2 + TP green / FP red / FN blue; pn3, reserved_msles1_n3, reserved_msles3_n3; slices
+  read from the Phase-105 index, k = 102 / 70 / 104; slice counts equal the index). Definitive 3D set:
+  phase108_v4_3d_prediction_brain_context.png (F2), phase109_v4_3d_gt_prediction_brain_context.png (F3),
+  phase109_v4_3d_tp_fp_fn.png (F4, optional). Index: results/metrics/phase120_final_figure_index.csv
+  (scientificDataModified = false); captions: docs/FINAL_FIGURE_CAPTIONS.md (grey surface = automatic
+  EXP-021 T1-derived brain mask, display context only).
+Package manifest: results/metrics/phase118_120_final_report_package_manifest.csv (11 artifacts).
+No tag, no commit, no push. Phase 121 not started.
+```
+
+
+### PHASES 121–122 — ERROR ANALYSIS AND LIMITATIONS (2026-10-17; analysis only, no EXP id)
+
+```text
+Analysis only: no segmentation, no prediction, no metric recomputed from GT, no parameter change, no new
+  case or simulation. Frozen Phase-118/120 package verified before and after (52 sources + 11 package
+  artifacts + 14 v4 + 26 v3 frozen hashes: 103 / 103 equal).
+Outputs: docs/FINAL_ERROR_DISCUSSION.md (Phase 121), docs/FINAL_LIMITATIONS.md (Phase 122),
+  results/metrics/phase121_122_claim_evidence_matrix.csv (59 claims: 29 observations, 8 interpretations,
+  21 limitations, 1 future-work item; every [Cnn] cited in the documents is in the matrix).
+Principal findings (evidence hierarchy preserved):
+  - FP: on the lesion-free reserved phantoms v4 predicts 172 / 30 voxels vs v3 31,917 / 17,486 (derived
+    reduction 99.5 % / 99.8 %), residual false components 10 / 5. v3 oversegmentation at low lesion
+    prevalence suggests that "highest T2 class = lesion" is unreliable when lesions are sparse.
+  - FN: v4 shifts the operating point to selectivity; Precision rises and Recall falls in every
+    lesion-containing case. Part of the FN is structural (GT outside S2, e.g. 110 / 322 on msles1_n3).
+  - Mild load (msles1_n3): Dice 0.024 -> 0.341 but Recall 0.237, 4 / 13 lesions touched: not solved.
+  - Severe load (msles3_n3): v3 keeps a slightly higher Dice (0.788 vs 0.773) and Recall.
+  - Noise: v3 (Phase 97) stable to 5 %, Precision-driven degradation from 7 %; v4 on seen pn cases has no
+    FP explosion but Recall falls to 0.332 at 9 % (in-sample). High-noise failure attributed cautiously to
+    reduced separability and reduced S2 coverage together.
+  - S2 = largest FP reduction (Phase 99) and a hard Recall ceiling; morphology useful, square-3 too
+    aggressive; 2D -> 3D diffusion small; G1 / recovery / EXP-061 growth not retained (condition-dependent).
+Principal limitations: simulated BrainWeb data, anatomical diversity strongly limited to
+  the BrainWeb environment used, idealized crisp GT, one acquisition
+  protocol (1 mm, AI, 0 % INU), intensity dependence and fixed 0..4095 normalization, three simulated
+  lesion loads, small reserved test (4 conditions), v4 developed on seen data and v3 / v4 evidence
+  asymmetry, k = 5 not universal, slice-wise opening, Specificity / any-overlap evaluation caveats,
+  display-slice selection, runtime not measured; no clinical or population claim.
+No new EXP, no commit, no push. Phase 123 not started.
+```
+
+
+### PHASE 111 — ARTIFICIAL-CASE VALIDATION OF THE EVALUATION METRICS (2026-10-20; software validation, no EXP id)
+
+```text
+Script: experiments/phase111_artificial_metric_validation.m, PASS 75/75 (tolerance 1e-12, counts exact).
+Functions tested (actual project code, unchanged): computeVoxelConfusion, compute{Dice,IoU,Precision,
+  Recall,Specificity}FromConfusion, computeBinaryMaskVolume, computeVolumeErrorPercent,
+  computeLesionWiseMatches. Expected values hard-coded, not computed with the functions under test.
+Primary 3x3 case: GT [1 1 0; 1 0 0; 0 0 0], prediction [1 0 1; 1 0 0; 0 0 0] -> TP 2, FP 1, FN 1, TN 5;
+  Dice 2/3, IoU 1/2, Precision 2/3, Recall 2/3, Specificity 5/6; volumes 3 / 3 mm3, volume error 0 %.
+Volume error: 4 -> 5 voxels 25 % (+1), 4 -> 3 voxels 25 % (-1); spacing 2x1x1 mm multiplies the volume.
+Edge cases (existing convention confirmed, not changed): zero denominator -> 1 for Dice / IoU /
+  Precision / Recall / Specificity (empty prediction: Precision 1; empty GT: Recall 1; both empty: all 1);
+  computeVolumeErrorPercent raises an error for V_GT = 0. Reporting layer for |GT| = 0 (Phase-103 runner,
+  frozen audit table): Dice / IoU / Precision / Recall / volume error = NaN, Specificity = TN/(TN+FP).
+Lesion-wise (26-connected, >= 1 shared voxel): 3 GT lesions, 2 detected, 1 missed, 3 predicted
+  components, 2 matched, 1 false; vertex-touching voxels form one component.
+Integrity: frozen Phase-118/120 package, Phase-103 outputs and config.m unchanged; no BrainWeb data used.
+Outputs: results/metrics/phase111_artificial_metric_validation.csv, phase111_validation_summary.txt.
+Phases 110, 112-115 remain deferred. No commit, no push.
+```

@@ -919,6 +919,16 @@ Recovery reduced the score. The frozen parameters are unchanged.
 - At mild load the highest TA class does not necessarily represent a distinct lesion population and includes high-intensity normal tissue, producing marked over-segmentation. This is a structural limitation of "highest class = lesion" as lesion prevalence varies.
 - These are simulated lesion burdens on one anatomy, not independent-patient generalization. The parameters are unchanged.
 
+**Post-test extension v4 (amendments A3 / A4):** v4 = v3 with the T2 threshold max(TA2, μref + 5σref). The reference is the image-derived WM-like region S2 ∩ T1-high, not a GT mask. Selected in EXP-060 and frozen with tag `v4-frozen`.
+- **Reserved test** (protocol fixed before data generation; custom AI, seed 2):
+  - lesion-free phantom: 172 / 30 false-positive voxels (v3: 31,917 / 17,486);
+  - msles1 3 %: Dice 0.341 (v3 0.024); msles3 3 %: Dice 0.773 (v3 0.788).
+- **Reporting:** v3 is the prospectively tested pipeline; v4 is the final improved pipeline.
+
+**Reproducibility (Phase 103):** the final evaluation suite can be reproduced through one registry-driven experiment runner (`experiments/phase103_experiment_runner.m`). It executes the frozen v3 and v4 pipelines on all 13 registered project cases and exports consolidated metrics.
+
+All reported final evaluation results can be reproduced through this single runner. It reproduces the previously stored predictions voxel by voxel and their confusion counts: 26 / 26 combinations.
+
 **Data:**
 
 - Tuning uses only the development configurations of Section 19.1.
@@ -1101,6 +1111,15 @@ Planned visualizations include:
 - final 3D lesion visualization.
 
 Visualization code must remain separate from the segmentation algorithm.
+
+Implemented (Phases 105–109, final v4 only): 2D overlays of prediction, GT and TP / FP / FN on T2 slices;
+3D final prediction rendering; 3D GT / prediction comparison; 3D TP / FP / FN comparison; optional 3D
+brain-context variant (transparent automatic brain mask, display only). 3D convention: X = array
+dimension 1, Y = dimension 2, Z = dimension 3, 1 mm isotropic; no left / right labels.
+
+Final results status (Phase 118): v4 (V4_K5, tag `v4-frozen`) is the final improved pipeline; v3
+(D3_M1_G0, tag `v3-final-frozen`) is the original prospective reference (Phase 97). The final v4 reserved
+test is complete and the result package is frozen (`docs/FINAL_RESULTS_FREEZE.md`).
 
 ---
 

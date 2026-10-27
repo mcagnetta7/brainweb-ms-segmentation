@@ -91,7 +91,53 @@ Last updated: 2026-10-14, after **Phase 95 including EXP-057**.
     - Secondary check on the seen pn1 / 5 / 7 / 9: v4 Dice 0.723 / 0.721 / 0.663 / 0.493 vs v3 0.692 / 0.715 / 0.408 / 0.409. v4 also removes the high-noise false-positive collapse.
   - **Amendment A4:** development continues on all 9 seen cases (in-sample); the reserved test is kept unseen.
   - **EXP-061 (hysteresis growth from the v4 cores): negative.** No configuration beats v4 (mean in-sample Dice 0.639). The best growth setting depends on the noise level. **v4 is the current best version.**
-- **Phase 102 — runtime measurement:** not started (after v4, or when the user decides).
+  - **Development closed.** Reserved-test protocol registered (commit `b27f9ff`).
+  - **Reserved v4 test: DONE** (one shot, PASS 6/6; `experiments/v4_reserved_test.m`; custom AI, seed 2).
+    - **Lesion-free phantom, false-positive voxels (v4 vs v3):** 172 vs 31,917 (noise 0 %), 30 vs 17,486 (noise 3 %).
+    - **Dice (v4 vs v3):** msles1 3 % 0.341 vs 0.024; msles3 3 % 0.773 vs 0.788.
+    - **Final reporting:** v3 = prospectively tested pipeline (Phase 97); **v4 = final improved pipeline**, verified on the reserved test.
+- **Phase 102 — runtime measurement: SKIPPED / NOT REQUIRED FOR CORE PROJECT** (user decision, 2026-10-17). No real-time or computational-efficiency requirement was defined.
+- **Phase 103 — automated experiment runner: COMPLETE** (2026-10-17; PASS 13/13).
+  - **Runner:** `experiments/phase103_experiment_runner.m`, one command.
+  - **Suite:** 13 cases (6 pre-computed, 3 custom seed 1, 4 reserved replays) × frozen v3 + v4 = 26 combinations. All 26 reproduce the saved predictions voxel by voxel and the authoritative TP / FP / FN exactly. The 39 registry input references correspond to 30 distinct files (26 MRI + 4 GT).
+  - **Purpose:** automated reproducibility of the current evaluation suite; not new evidence.
+  - Outputs: `results/metrics/phase103_{runner_metrics,case_summary,runner_manifest}.csv`, `phase103_runner_verification.txt`.
+- **Phase 104 — CSV / MAT export: COMPLETE / FULFILLED BY PHASE 103.** The runner already exports the consolidated CSVs, and the predictions are archived as MAT files.
+- **Phases 105–107 — final 2D visualization: COMPLETE** (2026-10-17; PASS 10/10).
+  - Combined implementation: `experiments/phase105_107_final_2d_visualization.m`; v4 only.
+  - Cases: pn3, reserved_msles1_n3, reserved_msles3_n3, plus a normal-phantom diagnostic.
+  - Deterministic display slices: 102 / 70 / 104 / 83.
+  - Figures in `results/figures/`:
+    - `phase105_v4_mri_prediction.png`;
+    - `phase106_v4_mri_ground_truth.png`;
+    - `phase107_v4_tp_fp_fn.png`;
+    - `phase107_v4_normal_false_positive_diagnostic.png`.
+  - Index and manifest: `results/metrics/phase105_107_{visualization_index,figure_manifest}.csv`.
+- **Phases 108–109 — final 3D visualization: COMPLETE** (2026-10-17; PASS 11/11).
+  - Phase 108: COMPLETE; Phase 109: COMPLETE. Combined implementation: `experiments/phase108_109_final_3d_visualization.m`; helper `src/visualization/renderMask3DSurface.m`.
+  - Same three cases and saved v4 predictions as Phases 105–107; complete 3D masks; X = dim 1, Y = dim 2, Z = dim 3 (display-only permutation for `isosurface`); 1 mm isotropic; fixed view(3) (az −37.5, el 30); full-volume limits; no smoothing / filtering / downsampling. Counts reproduce Phase 103.
+  - Figures in `results/figures/`:
+    - `phase108_v4_3d_prediction.png`;
+    - `phase109_v4_3d_gt_prediction_comparison.png`;
+    - `phase109_v4_3d_tp_fp_fn.png`.
+  - Optional brain-context variant (PASS 8/8, `experiments/phase108_109_brain_context_3d.m`): EXP-021 brain mask from T1, alpha 0.07, display only; `phase108_v4_3d_prediction_brain_context.png`, `phase109_v4_3d_gt_prediction_brain_context.png`.
+  - Index and manifests: `results/metrics/phase108_109_{visualization_index,figure_manifest,brain_context_index,brain_context_manifest}.csv`.
+- **Phase 111 — COMPLETE — artificial-case validation of evaluation metrics** (2026-10-20; `experiments/phase111_artificial_metric_validation.m`, PASS 75/75; tolerance 1e-12, counts exact).
+  - Confusion counts checked on a hand-specified 3×3 case (TP 2, FP 1, FN 1, TN 5); Dice 2/3, IoU 1/2, Precision 2/3, Recall 2/3, Specificity 5/6 verified against hard-coded values; volumes and volume error (0 %, 25 % over / under, spacing scaling) verified.
+  - Empty-mask edge cases: the existing low-level convention (zero denominator → 1 for Dice / IoU / Precision / Recall / Specificity; `computeVolumeErrorPercent` rejects V_GT = 0) is confirmed and unchanged; the lesion-free reporting policy (NaN overlap metrics, Specificity = TN/(TN+FP)) is verified on the frozen audit table and runner.
+  - Lesion-wise diagnostics (26-connectivity, ≥ 1 shared voxel) verified on an artificial 3D case (3 GT lesions, 2 detected, 1 missed, 1 false component).
+  - No BrainWeb data, segmentation, formula or scientific result changed. Outputs: `results/metrics/phase111_{artificial_metric_validation.csv,validation_summary.txt}`.
+- **Phases 110, 112–115 — DEFERRED TO PRE-DELIVERY QA** (user decision, 2026-10-17; Phase 111 completed separately on 2026-10-20 to support report Chapter 4). They concern software validation (110 assertions, 111 synthetic TP / FP / FN test), separation of responsibilities (112), dead-code removal (113), magic numbers (114) and MATLAB comments (115), not additional scientific experiments. To be revisited before final delivery / fresh-clone validation. Rule for that time: 112–115 must not change v4 behaviour; after any refactoring the Phase-103 runner is the regression test and must still reproduce 26 / 26 predictions voxel by voxel (one changed voxel = not a pure cleanup).
+- **Phases 116–117 — final commit / tag: DEFERRED UNTIL FINAL REPOSITORY PREPARATION** (after the pre-delivery cleanup).
+- **Phases 118–120 — final results package: COMPLETE** (2026-10-17; PASS 17/17; `experiments/phase118_120_final_results_package.m`). No segmentation rerun, no metric recomputed, no case removed.
+  - **Phase 118 — scientific results frozen:** `docs/FINAL_RESULTS_FREEZE.md`; 52 sources in `results/metrics/phase118_final_results_source_manifest.csv`. Evidence hierarchy: FINAL RESERVED TEST (v4, 4 cases) / SEEN DURING v4 DEVELOPMENT (v4, 9 cases) / ORIGINAL v3 PROSPECTIVE TEST (v3, 4 cases).
+  - **Phase 119 — report tables generated:** `results/metrics/phase119_main_results_v4_reserved.csv` (primary, 4 rows; `_report.csv` rounded), `phase119_v4_seen_context.csv` (9), `phase119_v3_original_prospective_test.csv` (4), `phase119_full_results_audit.csv` (26).
+  - **Phase 120 — definitive figure set:** F1 `results/figures/phase120_final_2d_overview.png` (slices 102 / 70 / 104); F2 `phase108_v4_3d_prediction_brain_context.png`; F3 `phase109_v4_3d_gt_prediction_brain_context.png`; F4 (optional) `phase109_v4_3d_tp_fp_fn.png`. Index `results/metrics/phase120_final_figure_index.csv`; captions `docs/FINAL_FIGURE_CAPTIONS.md`.
+  - Package manifest: `results/metrics/phase118_120_final_report_package_manifest.csv` (11 artifacts).
+- **Phase 121 — COMPLETE — critical error analysis** (2026-10-17; `docs/FINAL_ERROR_DISCUSSION.md`).
+- **Phase 122 — COMPLETE — project limitations documented** (2026-10-17; `docs/FINAL_LIMITATIONS.md`).
+  - Traceability: `results/metrics/phase121_122_claim_evidence_matrix.csv` (59 claims). Analysis only; frozen package unchanged.
+- **Next: Phase 123 — report introduction** (not started).
 - **Phase 95 supplementary experiment (EXP-057), complete — CURRENT SELECTED DEVELOPMENT CONFIGURATION:**
   - **Search:** 36 configurations / 72 predictions on `pn0`/`pn3` (T1-derived support S0/S1/S2 × T2 threshold TA/TB inside the support × opening M0/M1/M2 × G0/G1), all generated before the GT. The baseline S0_TA_M2_G1 reproduces the EXP-056 winner voxel by voxel.
   - **Selected: `S2_TA_M2_G1`.**

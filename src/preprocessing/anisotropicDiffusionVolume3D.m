@@ -13,16 +13,32 @@ function [filteredVolume, gradientThreshold] = anisotropicDiffusionVolume3D(volu
 %
 %   Output: volume double delle stesse dimensioni e la soglia del gradiente
 %   usata. Nessuna normalizzazione, soglia o altra elaborazione.
+%
+%   Nella v4 riceve la T2 normalizzata. Idea della diffusione anisotropa: a ogni
+%   iterazione ogni voxel si avvicina alla media dei vicini, ma lo scambio è forte
+%   dove la differenza di intensità è piccola (rumore dentro un tessuto) e quasi
+%   nullo dove è grande (bordo tra tessuti). Il rumore viene livellato, i bordi delle
+%   lesioni restano netti. Con la conduzione esponenziale il coefficiente vale
+%   c = exp(-(|grad I| / K)^2), con K = GradientThreshold.
 
+    % --- Validazione degli ingressi ------------------------------------------------
+    % Volume 3D di double reali e finiti (niente NaN o infiniti).
     arguments
         volume (:, :, :) double {mustBeReal, mustBeFinite}
     end
 
+    % Valori predefiniti, usati solo nel caso limite di un volume costante.
     filteredVolume = volume;
     gradientThreshold = NaN;
+    % Escursione delle intensità del volume (massimo - minimo).
     dynamicRange = max(volume(:)) - min(volume(:));
+    % Un volume costante non ha nulla da filtrare (e la soglia sarebbe 0): resta invariato.
     if dynamicRange > 0
+        % Soglia del gradiente K = 10 % dell'escursione del volume: le variazioni molto
+        % più piccole di K vengono livellate, quelle molto più grandi conservate.
         gradientThreshold = 0.10 * dynamicRange;
+        % Diffusione anisotropa sull'intero volume 3D, parametri fissi:
+        % 5 iterazioni, connettività massima (26 vicini), conduzione esponenziale.
         filteredVolume = imdiffusefilt(volume, 'GradientThreshold', gradientThreshold, ...
             'NumberOfIterations', 5, 'Connectivity', 'maximal', 'ConductionMethod', 'exponential');
     end
